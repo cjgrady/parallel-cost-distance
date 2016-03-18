@@ -3,12 +3,15 @@
 @author: CJ Grady
 @status: alpha
 """
+import time
+
 from singleTile.dijkstra import SingleTileSerialDijkstraLCP
 # .............................................................................
 if __name__ == "__main__":
    
-   inFn = '/home/cjgrady/git/irksome-broccoli/testData/testGrid.asc'
-   outFn = '/home/cjgrady/git/irksome-broccoli/testData/outputGrid.asc'
+   t1 = time.time()
+   inFn = '/home/cjgrady/thesis/fl_east_gom_crm_v1.asc'
+   outFn = '/home/cjgrady/thesis/serialDijkstraFL.asc'
    
    def costFn(i, x, y, z):
       c = max(i, y)
@@ -26,4 +29,5 @@ if __name__ == "__main__":
    print "Attempting to calculate"
    t1.calculate()
    
-   
+   t2 = time.time()
+   print "Elapsed time:", t2-t1

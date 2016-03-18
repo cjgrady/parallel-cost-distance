@@ -4,16 +4,17 @@
 @author: CJ Grady
 @status: alpha
 """
+import argparse
 import concurrent.futures
 import heapq
-import logging
-from logging.handlers import RotatingFileHandler
+#import logging
+#from logging.handlers import RotatingFileHandler
+import numpy as np
 import os
-from time import sleep
 
 from singleTile.base import SingleTileLCP
 
-LOG_PATH = '/home/cjgrady/logs/'
+#LOG_PATH = '/home/cjgrady/logs/'
 
 # .............................................................................
 class SingleTileParallellDijkstraLCP(SingleTileLCP):
@@ -23,6 +24,7 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
    step = 25
    maxWorkers = 8
    chunks = []
+   cellsChanged = 0
    
    # ..........................
    def setStepSize(self, step):
@@ -59,10 +61,14 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          # Add to dictionary with source cell
          startChunks[k]['sourceCells'].append((x, y))
       
-      print startChunks.keys()
       for k in startChunks.keys():
          minX, minY, maxX, maxY = startChunks[k]['bbox']
          self.chunks.append((minX, minY, maxX, maxY, startChunks[k]['sourceCells']))
+      
+      self.origLeft = np.copy(self.cMtx[:,0])
+      self.origRight = np.copy(self.cMtx[:, self.cMtx.shape[1]-1])
+      self.origTop = np.copy(self.cMtx[0])
+      self.origBottom = np.copy(self.cMtx[self.cMtx.shape[0]-1, :])
       
       ts = []
       
@@ -76,26 +82,14 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
                ts.append(t)
             ggg = all([t.done() for t in ts])
             ccc = len(self.chunks) != 0 or not ggg
-      print "Done"      
-      sleep(10)
+      print "Done2"      
+      #sleep(10)
       
    # ..........................
    def dijkstraChunk(self, chunk):#minx, miny, maxx, maxy, sourceCells):
       minx, miny, maxx, maxy, sourceCells = chunk
       
       name = '%s-%s-%s-%s' % (minx, miny, maxx, maxy)
-      log = logging.getLogger(name)
-      log.setLevel(logging.DEBUG)
-      #logFormat = '%(asctime)-15s %(message)s'
-      #logging.basicConfig(filename=os.path.join(LOG_PATH, '%s.log' % name, format=logFormat, level=logging.DEBUG)
-      
-      hndl = RotatingFileHandler(os.path.join(LOG_PATH, '%s.log' % name))
-      #hndl.setFormatter(logFormat)
-      hndl.setLevel(logging.DEBUG)
-      log.addHandler(hndl)
-      
-      log.error("In Dijkstra chunk")
-      log.debug("Minx: %s, miny: %s, maxx: %s, maxy: %s" % (minx, miny, maxx, maxy))
       hq = []
       
       leftCells = []
@@ -108,9 +102,9 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          """
          @summary: Add a cell to the heap if appropriate
          """
-         log.debug("Adding cell: %s %s %s" % (x, y, cost))
+         #log.debug("Adding cell: %s %s %s" % (x, y, cost))
          if int(self.cMtx[y][x]) == int(self.noDataValue) or self.cMtx[y][x] > cost:
-            log.debug("Adding to heap")
+            #log.debug("Adding to heap")
             heapq.heappush(hq, (cost, x, y))
    
       # ........................
@@ -144,9 +138,11 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          if cmpx != x or cmpy != y:
             if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or self.cMtx[cmpy][cmpx] > c:
                self.cMtx[cmpy][cmpx] = c
+               self.cellsChanged += 1
                addNeighbors(cmpx, cmpy, c)
             else:
-               log.debug("Not adding: %s, %s, %s, %s, %s, %s" % (self.cMtx[cmpy][cmpx], self.noDataValue, self.cMtx[cmpy][cmpx], c, x, y))
+               #log.debug("Not adding: %s, %s, %s, %s, %s, %s" % (self.cMtx[cmpy][cmpx], self.noDataValue, self.cMtx[cmpy][cmpx], c, x, y))
+               pass
          else:
             addNeighbors(x, y, c)
             
@@ -155,11 +151,12 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
       
       while len(hq) > 0:
          cost, x, y = heapq.heappop(hq)
-         log.debug("Popped %s, %s, %s" % (cost, x, y))
+         #log.debug("Popped %s, %s, %s" % (cost, x, y))
          #res.append("Popped %s, %s, %s" % (cost, x, y))
          if int(self.cMtx[y][x]) == int(self.noDataValue) or cost < self.cMtx[y][x]:
             self.cMtx[y][x] = cost
-            log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
+            self.cellsChanged += 1
+            #log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
             addNeighbors(x, y, cost)
             # Should we spread?
             #res.append("x, y, min x and y, max x and y: (%s, %s) (%s, %s), (%s, %s)" % (x, y, minx, miny, maxx, maxy))
@@ -176,13 +173,12 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
                #res.append("Adding a top cell")
                topCells.append((x, y))
          else:
-            log.debug("Cost >= exist: (%s, %s) for (%s, %s)" % (cost, self.cMtx[y][x], x, y))
+            #log.debug("Cost >= exist: (%s, %s) for (%s, %s)" % (cost, self.cMtx[y][x], x, y))
+            pass
       
       # Spread
       # Assume that chunks start on left and top edges and partials may be at
       #    bottom and right
-      
-      # TODO: Handle moving left or up from right or bottom edges
       
       if len(leftCells) > 0:
          if minx > 0:
@@ -198,7 +194,105 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          if maxy < self.cMtx.shape[0]:
             newMaxY = min(self.cMtx.shape[0]-1, maxy + self.step)
             self.chunks.append((minx, miny+self.step, maxx, newMaxY, bottomCells))
-      log.debug("Number of chunks: %s" % len(self.chunks))
-      log.debug("Shape: %s, %s" % self.cMtx.shape)
+      #log.debug("Number of chunks: %s" % len(self.chunks))
+      #log.debug("Shape: %s, %s" % self.cMtx.shape)
+   
+   def writeChangedVectors(self, outDir, taskId='unknown'):
+      self.newLeft = self.cMtx[:,0]
+      self.newRight = self.cMtx[:, self.cMtx.shape[1]-1]
+      self.newTop = self.cMtx[0]
+      self.newBottom = self.cMtx[self.cMtx.shape[0]-1, :]
+      
+      
+      l = t = r = b = False
+      # Save left vector if changed
+      
+      #if not np.array_equal(self.origLeft, self.newLeft):
+      if len(np.where(np.round(self.origLeft, 2) > np.round(self.newLeft, 2))[0]) > 0:
+         fn = os.path.join(outDir, '%s-toLeft.npy' % taskId)
+         np.save(fn, self.newLeft)
+         l = True
+      
+      # Save top vector if changed
+      #if not np.array_equal(self.origTop, self.newTop):
+      if len(np.where(np.round(self.origTop, 2) > np.round(self.newTop, 2))[0]) > 0:
+         fn = os.path.join(outDir, '%s-toTop.npy' % taskId)
+         np.save(fn, self.newTop)
+         t = True
+      
+      # Save right vector if changed
+      if len(np.where(np.round(self.origRight, 2) > np.round(self.newRight, 2))[0]) > 0:
+      #if not np.array_equal(self.origRight, self.newRight):
+         fn = os.path.join(outDir, '%s-toRight.npy' % taskId)
+         np.save(fn, self.newRight)
+         r = True
+      
+      # Save left vector if changed
+      if len(np.where(np.round(self.origBottom, 2) > np.round(self.newBottom, 2))[0]) > 0:
+      #if not np.array_equal(self.origBottom, self.newBottom):
+         fn = os.path.join(outDir, '%s-toBottom.npy' % taskId)
+         np.save(fn, self.newBottom)
+         b = True
+      
+      with open(os.path.join(outDir, '%s-summary.txt' % taskId), 'w') as outF:
+         outF.write("%s\n" % self.minLong)# Min x
+         outF.write("%s\n" % self.minLat) # Min y
+         outF.write("%s\n" % (self.minLong +1)) # Max x
+         outF.write("%s\n" % (self.minLat + 1)) # Maxy y
+         outF.write("%s\n" % l) # Left modified
+         outF.write("%s\n" % t) # Top modified
+         outF.write("%s\n" % r) # Right modified
+         outF.write("%s\n" % b) # Bottom modified
+         outF.write("%s\n" % self.cellsChanged)
+      
+# .............................................................................
+if __name__ == "__main__":
+   
+   parser = argparse.ArgumentParser()
+   
+   parser.add_argument("dem")
+   parser.add_argument("costSurface")
+   parser.add_argument('-g', help="Generate edge vectors for modified cells")
+   parser.add_argument('-t', '--taskId', help="Use this task id for outputs")
+   parser.add_argument('-v', '--vect', help="Use this vector for source cells", nargs="*")
+   parser.add_argument('-s', '--fromSide', type=int, help="Source vector is from this side 0: left, 1: top, 2: right, 3: bottom", nargs="*")
+   parser.add_argument('-o', help="File to write outputs")
+   parser.add_argument('-w', type=int, help="Maximum number of worker threads")
+   parser.add_argument('--step', type=int, help="The step size to use")
 
-            
+   args = parser.parse_args()
+   
+   def costFn(i, x, y, z):
+      return max(i, y)
+
+   tile = SingleTileParallellDijkstraLCP(args.dem, args.costSurface, costFn)
+
+   if args.fromSide is None or args.vect is None or len(args.fromSide) == 0 or len(args.vect) == 0:
+      tile.findSourceCells()
+   else:
+      for sVect, fromDir in zip(args.vect, args.fromSide):
+         sourceVector = np.load(sVect)
+         tile.addSourceVector(sourceVector, fromDir)
+   
+   if args.w is not None:
+      tile.setMaxWorkers(args.w)
+   else:
+      tile.setMaxWorkers(50)
+      
+   if args.step is not None:
+      tile.setStepSize(args.step)
+   else:
+      tile.setStepSize(150)
+
+
+   tile.calculate()
+   
+   if args.taskId is not None:
+      taskId = args.taskId
+   else:
+      taskId = 'unknownTask'
+      
+   if args.g is not None:
+      outDir = args.o
+      tile.writeChangedVectors(outDir, taskId)
+      

@@ -46,23 +46,79 @@ class SingleTileLCP(object):
                             top, 2: right, 3: bottom)
       """
       if originSide == 0:
-         srcIdxs = numpy.where(vect < self.cMtx[0])[0]
-         self.cMtx[0] = numpy.minimum(vect, self.cMtx[0])
-         self.sourceCells = numpy.array([(0, x) for x in srcIdxs])
+         inVect = self.inMtx[0,:]
+         costVect = self.cMtx[0,:]
+         cmpVect = self._squishStretchVector(vect, len(inVect))
+         getSourceCoords = lambda j: (0, j)
+         
+#          cmpVect = self._squishStretchVector(vect, len(self.cMtx[0]))
+#          srcIdxs = numpy.where(cmpVect < self.cMtx[0])[0]
+#          self.cMtx[0] = numpy.minimum(cmpVect, self.cMtx[0])
+#          self.sourceCells = numpy.array([(0, x) for x in srcIdxs])
       elif originSide == 1:
-         srcIdxs = numpy.where(vect < self.cMtx[:,0])[0]
-         self.cMtx[:,0] = numpy.minimum(vect, self.cMtx[:,0])
-         self.sourceCells = numpy.array([(x, 0) for x in srcIdxs])
+         inVect = self.inMtx[:,0]
+         costVect = self.cMtx[:,0]
+         cmpVect = self._squishStretchVector(vect, len(inVect))
+         getSourceCoords = lambda j: (j, 0)
+
+#          cmpVect = self._squishStretchVector(vect, len(self.cMtx[:,0]))
+#          srcIdxs = numpy.where(cmpVect < self.cMtx[:,0])[0]
+#          self.cMtx[:,0] = numpy.minimum(cmpVect, self.cMtx[:,0])
+#          self.sourceCells = numpy.array([(x, 0) for x in srcIdxs])
       elif originSide == 2:
-         x = len(self.cMtx)
-         srcIdxs = numpy.where(vect < self.cMtx[x])[0]
-         self.cMtx[x] = numpy.minimum(vect, self.cMtx[x])
-         self.sourceCells = numpy.array([(x, y) for y in srcIdxs])
+         # Under construction, fix others when this is done
+         
+         # Get the length of the array that we are comparing to
+         # Shrink / stretch the comp vector as appropriate
+         # Loop through the arrays
+         # If the existing cost has not been calculated, and the vector cost has, update the cost
+         #    or if the existing cost is greater than the compared
+         
+         
+         inVect = self.inMtx[self.cMtx.shape[0]-1,:]
+         costVect = self.cMtx[self.cMtx.shape[0]-1,:]
+         cmpVect = self._squishStretchVector(vect, len(inVect))
+         getSourceCoords = lambda j: (self.cMtx.shape[0]-1, j)
+         
+         
+#          x = len(self.cMtx)
+#          cmpVect = self._squishStretchVector(vect, x)
+#          
+#          # Find the source cells and set values in the matrix
+#          for i in xrange(len(self.cMtx[x-1])):
+#             if self.cMtx[x-1]
+#          
+#          srcIdxs = numpy.where(cmpVect < self.cMtx[x-1])[0]
+#          #np.where((a < b) | (b == 1))
+#          self.cMtx[x-1] = numpy.minimum(cmpVect, self.cMtx[x-1])
+#          self.sourceCells = numpy.array([(x-1, y) for y in srcIdxs])
+#          print self.sourceCells
       else:
-         y = len(self.cMtx[0])
-         srcIdxs = numpy.where(vect < self.cMtx[:,y])[0]
-         self.cMtx[:,y] = numpy.minimum(vect, self.cMtx[:,y])
-         self.sourceCells = numpy.array([(x, y) for x in srcIdxs])
+         inVect = self.inMtx[:,self.cMtx.shape[1] -1]
+         costVect = self.cMtx[:,self.cMtx.shape[1] -1]
+         cmpVect = self._squishStretchVector(vect, len(inVect))
+         getSourceCoords = lambda j: (j, self.cMtx.shape[1] - 1)
+
+#          y = len(self.cMtx[0])
+#          cmpVect = self._squishStretchVector(vect, y)
+#          srcIdxs = numpy.where(cmpVect < self.cMtx[:,y])[0]
+#          self.cMtx[:,y] = numpy.minimum(cmpVect, self.cMtx[:,y])
+#          self.sourceCells = numpy.array([(x, y) for x in srcIdxs])
+
+      # Get the length of the array that we are comparing to
+      # Shrink / stretch the comp vector as appropriate
+      # Loop through the arrays
+      # If the existing cost has not been calculated, and the vector cost has, update the cost
+      #    or if the existing cost is greater than the compared
+      
+      # For each element in the array
+      for i in xrange(len(cmpVect)):
+         # Get cost to inundate
+         c = max(inVect[i], cmpVect[i])
+         if int(costVect[i]) == int(self.noDataValue) or costVect[i] > c:
+            costVect[i] = c
+            self.sourceCells.append(getSourceCoords(i))
+
 
    # ..........................
    def calculate(self):
@@ -80,9 +136,9 @@ class SingleTileLCP(object):
       @param sourceValue: Source cells are grid cells with this value
       """
       #self.sourceCells = numpy.vstack(numpy.where(self.inMtx == self.noDataValue)).T
-      self.sourceCells = numpy.vstack(numpy.where(self.inMtx <= -100)[::-1]).T
+      self.sourceCells = numpy.vstack(numpy.where(self.inMtx <= -200)[::-1]).T
       for x, y in self.sourceCells:
-         print x, y, self.inMtx[y][x]
+         #print x, y, self.inMtx[y][x]
          self.cMtx[y][x] = self.inMtx[y,x]
    
    # ..........................
@@ -98,9 +154,18 @@ class SingleTileLCP(object):
          with open(self.inFn) as f:
             headers = [next(f) for x in range(6)]
          self.headers = ''.join(headers).strip()
-         self.noDataValue = int(self.headers.split('NODATA_VALUE')[1].strip())
+         self.noDataValue = float(self.headers.lower().split('nodata_value')[1].strip())
          #TODO: Read from input
          self.cellSize = 10
+         
+         a = self.headers.split('yllcorner')[1]
+         print a
+         b = a.strip()
+         print b
+         
+         self.minLat = int(round(float(self.headers.split('yllcorner')[1].split('\n')[0].strip()), 0))
+         self.minLong = int(round(float(self.headers.split('xllcorner')[1].split('\n')[0].strip()), 0))
+         
       else:
          raise Exception, "Input grid does not exist"
 
@@ -124,4 +189,18 @@ class SingleTileLCP(object):
       @note: This method should be implemented in subclasses
       """
       pass
+   
+   # ..........................
+   def _squishStretchVector(self, vect, toSize):
+      """
+      @summary: Shrink or stretch a vector so that it matches the one it will 
+                   be compared to
+      """
+      vLen = len(vect)
+      newV = []
+      
+      for i in xrange(toSize):
+         idx = int(1.0 * vLen * i / toSize)
+         newV.append(vect[idx])
+      return numpy.array(newV)
    
