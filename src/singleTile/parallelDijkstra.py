@@ -49,8 +49,8 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          ySteps = int(y / self.step)
          minX = xSteps * self.step
          minY = ySteps * self.step
-         maxX = min(((xSteps+1)*self.step - 1), self.cMtx.shape[1])
-         maxY = min(((ySteps+1)*self.step - 1), self.cMtx.shape[0])
+         maxX = min(((xSteps+1)*self.step - 1), self.cMtx.shape[1]-1)
+         maxY = min(((ySteps+1)*self.step - 1), self.cMtx.shape[0]-1)
                     
          # Make a key
          k = "%s - %s - %s - %s" % (minX, minY, maxX, maxY)
@@ -60,6 +60,8 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
                               'sourceCells' : []}
          # Add to dictionary with source cell
          startChunks[k]['sourceCells'].append((x, y))
+      
+      #print "Start chunks:", startChunks
       
       for k in startChunks.keys():
          minX, minY, maxX, maxY = startChunks[k]['bbox']
@@ -110,7 +112,7 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
       # ........................
       def addNeighbors(x, y, cost):
          cellCost = self.inMtx[y][x]
-         if cellCost != self.noDataValue:
+         if int(cellCost) != int(self.noDataValue):
             if x - 1 >= minx:
                addCell(x-1, y, self.costFn(cost, cellCost, self.inMtx[y][x-1], self.cellSize))
             if x + 1 <= maxx:
@@ -133,10 +135,10 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          if y > maxy:
             cmpy = maxy
          
-         c = max(self.cMtx[y][x], self.inMtx[cmpy][cmpx])
-
+         c = max(self.cMtx[y][x], self.inMtx[cmpy][cmpx], 0)
+         
          if cmpx != x or cmpy != y:
-            if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or self.cMtx[cmpy][cmpx] > c:
+            if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or round(self.cMtx[cmpy][cmpx], 1) -.1 > c:
                self.cMtx[cmpy][cmpx] = c
                self.cellsChanged += 1
                addNeighbors(cmpx, cmpy, c)
@@ -148,12 +150,11 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
             
       # .........................
       # Dijkstra
-      
       while len(hq) > 0:
          cost, x, y = heapq.heappop(hq)
          #log.debug("Popped %s, %s, %s" % (cost, x, y))
          #res.append("Popped %s, %s, %s" % (cost, x, y))
-         if int(self.cMtx[y][x]) == int(self.noDataValue) or cost < self.cMtx[y][x]:
+         if int(self.cMtx[y][x]) == int(self.noDataValue) or cost < round(self.cMtx[y][x], 1) -.1:
             self.cMtx[y][x] = cost
             self.cellsChanged += 1
             #log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
@@ -172,9 +173,6 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
             if y == miny:
                #res.append("Adding a top cell")
                topCells.append((x, y))
-         else:
-            #log.debug("Cost >= exist: (%s, %s) for (%s, %s)" % (cost, self.cMtx[y][x], x, y))
-            pass
       
       # Spread
       # Assume that chunks start on left and top edges and partials may be at
@@ -207,32 +205,29 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
       l = t = r = b = False
       # Save left vector if changed
       
-      #if not np.array_equal(self.origLeft, self.newLeft):
-      if len(np.where(np.round(self.origLeft, 2) > np.round(self.newLeft, 2))[0]) > 0:
-         fn = os.path.join(outDir, '%s-toLeft.npy' % taskId)
-         np.save(fn, self.newLeft)
-         l = True
       
-      # Save top vector if changed
-      #if not np.array_equal(self.origTop, self.newTop):
-      if len(np.where(np.round(self.origTop, 2) > np.round(self.newTop, 2))[0]) > 0:
-         fn = os.path.join(outDir, '%s-toTop.npy' % taskId)
-         np.save(fn, self.newTop)
-         t = True
+      # Look for problems where input data is not no data but output grid is
       
-      # Save right vector if changed
-      if len(np.where(np.round(self.origRight, 2) > np.round(self.newRight, 2))[0]) > 0:
-      #if not np.array_equal(self.origRight, self.newRight):
-         fn = os.path.join(outDir, '%s-toRight.npy' % taskId)
-         np.save(fn, self.newRight)
-         r = True
-      
-      # Save left vector if changed
-      if len(np.where(np.round(self.origBottom, 2) > np.round(self.newBottom, 2))[0]) > 0:
-      #if not np.array_equal(self.origBottom, self.newBottom):
-         fn = os.path.join(outDir, '%s-toBottom.npy' % taskId)
-         np.save(fn, self.newBottom)
-         b = True
+      if self.cellsChanged > 0:
+         if len(np.where((np.round(self.origLeft, 1) -.1 > np.round(self.newLeft, 1)) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
+            fn = os.path.join(outDir, '%s-toLeft.npy' % taskId)
+            np.save(fn, self.newLeft)
+            l = True
+         
+         if len(np.where((np.round(self.origTop, 1) -.1 > np.round(self.newTop, 1)) | (self.origTop+1 >= self.noDataValue))[0]) > 0:
+            fn = os.path.join(outDir, '%s-toTop.npy' % taskId)
+            np.save(fn, self.newTop)
+            t = True
+         
+         if len(np.where((np.round(self.origRight, 1) -.1 > np.round(self.newRight, 1)) | (self.origRight+1 >= self.noDataValue))[0]) > 0:
+            fn = os.path.join(outDir, '%s-toRight.npy' % taskId)
+            np.save(fn, self.newRight)
+            r = True
+         
+         if len(np.where((np.round(self.origBottom, 1) -.1 > np.round(self.newBottom, 1)) | (self.origBottom >= self.noDataValue))[0]) > 0:
+            fn = os.path.join(outDir, '%s-toBottom.npy' % taskId)
+            np.save(fn, self.newBottom)
+            b = True
       
       with open(os.path.join(outDir, '%s-summary.txt' % taskId), 'w') as outF:
          outF.write("%s\n" % self.minLong)# Min x

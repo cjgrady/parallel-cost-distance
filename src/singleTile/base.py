@@ -136,10 +136,10 @@ class SingleTileLCP(object):
       @param sourceValue: Source cells are grid cells with this value
       """
       #self.sourceCells = numpy.vstack(numpy.where(self.inMtx == self.noDataValue)).T
-      self.sourceCells = numpy.vstack(numpy.where(self.inMtx <= -200)[::-1]).T
+      self.sourceCells = numpy.vstack(numpy.where(self.inMtx <= 0)[::-1]).T
       for x, y in self.sourceCells:
          #print x, y, self.inMtx[y][x]
-         self.cMtx[y][x] = self.inMtx[y,x]
+         self.cMtx[y][x] = 0#self.inMtx[y,x]
    
    # ..........................
    def initialize(self):
