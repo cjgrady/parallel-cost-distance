@@ -138,7 +138,7 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          c = max(self.cMtx[y][x], self.inMtx[cmpy][cmpx], 0)
          
          if cmpx != x or cmpy != y:
-            if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or round(self.cMtx[cmpy][cmpx], 1) -.1 > c:
+            if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or (round(self.cMtx[cmpy][cmpx], 1) -.1 > c and self.cMtx[cmpy][cmpx] >= 0):
                self.cMtx[cmpy][cmpx] = c
                self.cellsChanged += 1
                addNeighbors(cmpx, cmpy, c)
@@ -154,7 +154,7 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          cost, x, y = heapq.heappop(hq)
          #log.debug("Popped %s, %s, %s" % (cost, x, y))
          #res.append("Popped %s, %s, %s" % (cost, x, y))
-         if int(self.cMtx[y][x]) == int(self.noDataValue) or cost < round(self.cMtx[y][x], 1) -.1:
+         if int(self.cMtx[y][x]) == int(self.noDataValue) or (cost < round(self.cMtx[y][x], 1) -.1 and self.cMtx[y][x] >= 0):
             self.cMtx[y][x] = cost
             self.cellsChanged += 1
             #log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
