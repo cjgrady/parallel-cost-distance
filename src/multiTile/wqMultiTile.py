@@ -1,6 +1,7 @@
 """
 @summary: Runs using Work Queue over multiple tiles
 """
+import argparse
 import glob
 import os
 import time
@@ -12,26 +13,26 @@ INPUT_PATH = "/home/cjgrady/thesis/flTest/"
 COSTS_PATH = "/home/cjgrady/thesis/outputs/"
 
 # .............................................................................
-def getInputGridFilename(minx, miny, maxx, maxy):
-   return os.path.join(INPUT_PATH, "grid%s-%s-%s-%s.asc" % (minx, miny, maxx, maxy))
+def getInputGridFilename(inDir, minx, miny, maxx, maxy):
+   return os.path.join(inDir, "grid%s-%s-%s-%s.asc" % (minx, miny, maxx, maxy))
 
 # .............................................................................
-def getCostGridFilename(minx, miny, maxx, maxy):
-   return os.path.join(COSTS_PATH, "grid%s-%s-%s-%s.asc" % (minx, miny, maxx, maxy))
+def getCostGridFilename(cDir, minx, miny, maxx, maxy):
+   return os.path.join(cDir, "grid%s-%s-%s-%s.asc" % (minx, miny, maxx, maxy))
 
 # .............................................................................
-def getVectorFilename(taskId, d):
+def getVectorFilename(oDir, taskId, d):
    dirPart = ['toLeft', 'toTop', 'toRight', 'toBottom'][d]
    
-   return os.path.join(OUTPUTS_PATH, "%s-%s.npy" % (taskId, dirPart))
+   return os.path.join(oDir, "%s-%s.npy" % (taskId, dirPart))
    
 # .............................................................................
-def getSummaryFile(taskId):
-   return os.path.join(OUTPUTS_PATH, "%s-summary.txt" % taskId)
+def getSummaryFile(oDir, taskId):
+   return os.path.join(oDir, "%s-summary.txt" % taskId)
 
 # .............................................................................
-def readOutputs(taskId):
-   cnt = open(getSummaryFile(task.tag)).readlines()
+def readOutputs(oDir, taskId):
+   cnt = open(getSummaryFile(oDir, task.tag)).readlines()
    minx = int(cnt[0])
    miny = int(cnt[1])
    maxx = int(cnt[2])
@@ -45,22 +46,22 @@ def readOutputs(taskId):
    return minx, miny, maxx, maxy, l, t, r, b, cc
    
 # .............................................................................
-def getStartupTask(minx, miny, maxx, maxy, tag):
+def getStartupTask(minx, miny, maxx, maxy, stepSize, tag, inDir, cDir, oDir):
    task = Task('')
-   cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step=150".format(
+   cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss}".format(
             python='python',
             pycmd='~/git/irksome-broccoli/src/singleTile/parallelDijkstra.py',
-            inGrid=getInputGridFilename(minx, miny, maxx, maxy),
-            costGrid=getCostGridFilename(minx, miny, maxx, maxy),
-            outputsPath=OUTPUTS_PATH, taskId=tag)
+            inGrid=getInputGridFilename(inDir, minx, miny, maxx, maxy),
+            costGrid=getCostGridFilename(cDir, minx, miny, maxx, maxy),
+            ss=stepSize, outputsPath=oDir, taskId=tag)
    task.specify_command(cmd)
-   task.specify_output_file(getSummaryFile(tag))
+   task.specify_output_file(getSummaryFile(oDir, tag))
    task.specify_tag(str(tag))
    return task
 
 # .............................................................................
-def getConnectedTask(minx, miny, maxx, maxy, vects, fromSides, tag):
-   inGrid = getInputGridFilename(minx, miny, maxx, maxy)
+def getConnectedTask(minx, miny, maxx, maxy, vects, fromSides, tag, inDir, cDir, oDir, stepSize):
+   inGrid = getInputGridFilename(inDir, minx, miny, maxx, maxy)
    
    if os.path.exists(inGrid):
       task = Task('')
@@ -68,17 +69,18 @@ def getConnectedTask(minx, miny, maxx, maxy, vects, fromSides, tag):
       vectsSec = ' '.join(['-v %s' % v for v in vects])
       sidesSec = ' '.join(['-s %s' % s for s in fromSides])
       
-      cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step=150 {vectsSec} {sidesSec}".format(
+      cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} {vectsSec} {sidesSec}".format(
             python='python',
             pycmd='~/git/irksome-broccoli/src/singleTile/parallelDijkstra.py',
-            inGrid=getInputGridFilename(minx, miny, maxx, maxy),
-            costGrid=getCostGridFilename(minx, miny, maxx, maxy),
-            outputsPath=OUTPUTS_PATH, 
+            inGrid=getInputGridFilename(inDir, minx, miny, maxx, maxy),
+            costGrid=getCostGridFilename(cDir, minx, miny, maxx, maxy),
+            outputsPath=oDir, 
+            ss=stepSize,
             taskId=tag,
             vectsSec=vectsSec,
             sidesSec=sidesSec)
       task.specify_command(cmd)
-      task.specify_output_file(getSummaryFile(tag))
+      task.specify_output_file(getSummaryFile(oDir, tag))
       task.specify_tag(str(tag))
       return task
    else:
@@ -88,10 +90,29 @@ def getConnectedTask(minx, miny, maxx, maxy, vects, fromSides, tag):
 # .............................................................................
 if __name__ == "__main__":
 
+   # Read inputs
+   parser = argparse.ArgumentParser()
+   parser.add_argument('inputDir', type=str)
+   parser.add_argument('cDir', type=str)
+   parser.add_argument('oDir', type=str)
+   parser.add_argument('tileSize', type=float)
+   parser.add_argument('stepSize', type=float)
+   parser.add_argument('outputFile', type=str)
+
+   args = parser.parse_args()
+   
+   print args.inputDir
+   print args.tileSize
+   print args.stepSize
+
+   inDir = args.inputDir
+   cDir = args.cDir
+   oDir = args.oDir
+   stepSize = args.stepSize
+
    aTime = time.time()
    currentTag = 1
-   #inputGrids = [getInputGridFilename(-80, 33, -79, 34)]
-   inputGrids = glob.glob(os.path.join(INPUT_PATH, "*.asc"))
+   inputGrids = glob.glob(os.path.join(inDir, "*.asc"))
    
    port = WORK_QUEUE_DEFAULT_PORT
    print "Port:" , port
@@ -109,7 +130,7 @@ if __name__ == "__main__":
       maxy = '%s' % g.split('-')[5].split('.')[0]
       tag = currentTag
       currentTag += 1
-      task = getStartupTask(minx, miny, maxx, maxy, tag)
+      task = getStartupTask(minx, miny, maxx, maxy, stepSize, tag, inDir, cDir, oDir)
       print minx, miny, maxx, maxy
       k = '%s,%s,%s,%s' % (minx, miny, maxx, maxy)
       rGrids.append(k)
@@ -125,8 +146,8 @@ if __name__ == "__main__":
          print "Task id:", task.id
          print "Task tag:", task.tag
          
-         if os.path.exists(getSummaryFile(task.tag)):
-            minx, miny, maxx, maxy, l, t, r, b,cc = readOutputs(task.tag)
+         if os.path.exists(getSummaryFile(oDir, task.tag)):
+            minx, miny, maxx, maxy, l, t, r, b,cc = readOutputs(oDir, task.tag)
             print "Changed", cc, "cells"
 
             #TODO: Remove from running list
@@ -154,7 +175,7 @@ if __name__ == "__main__":
             
             # Add adjacent tiles as necessary
             if l:
-               vect = getVectorFilename(task.tag, 0)
+               vect = getVectorFilename(oDir, task.tag, 0)
                
                myKey = '%s,%s,%s,%s' % (minx-1, miny, maxx-1, maxy)
                if myKey in rGrids:
@@ -172,7 +193,7 @@ if __name__ == "__main__":
                      print "Added", myKey, "to running list", tag
                      q.submit(nTask)
             if t:
-               vect = getVectorFilename(task.tag, 1)
+               vect = getVectorFilename(oDir, task.tag, 1)
                
                myKey = '%s,%s,%s,%s' % (minx, miny+1, maxx, maxy+1)
                if myKey in rGrids:
@@ -190,7 +211,7 @@ if __name__ == "__main__":
                      print "Added", myKey, "to running list", tag
                      q.submit(nTask)
             if r:
-               vect = getVectorFilename(task.tag, 2)
+               vect = getVectorFilename(oDir, task.tag, 2)
 
                myKey = '%s,%s,%s,%s' % (minx+1, miny, maxx+1, maxy)
                if myKey in rGrids:
@@ -208,7 +229,7 @@ if __name__ == "__main__":
                      print "Added", myKey, "to running list", tag
                      q.submit(nTask)
             if b:
-               vect = getVectorFilename(task.tag, 3)
+               vect = getVectorFilename(oDir, task.tag, 3)
                myKey = '%s,%s,%s,%s' % (minx, miny-1, maxx, maxy-1)
                if myKey in rGrids:
                   if not waitingGrids.has_key(myKey):
@@ -232,3 +253,6 @@ if __name__ == "__main__":
    bTime = time.time()
    
    print bTime - aTime
+   
+   # Write summary
+   
