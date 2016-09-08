@@ -28,7 +28,7 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
    
    # ..........................
    def setStepSize(self, step):
-      self.step = step
+      self.step = self.cMtx.shape[0] * step
       
    # ..........................
    def setMaxWorkers(self, maxWorkers):
