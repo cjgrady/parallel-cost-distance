@@ -163,11 +163,11 @@ class SingleTileLCP(object):
          b = a.strip()
          print b
          
-         self.minLat = int(round(float(self.headers.split('yllcorner')[1].split('\n')[0].strip()), 0))
-         self.minLong = int(round(float(self.headers.split('xllcorner')[1].split('\n')[0].strip()), 0))
+         self.minLat = float(round(float(self.headers.split('yllcorner')[1].split('\n')[0].strip()), 0))
+         self.minLong = float(round(float(self.headers.split('xllcorner')[1].split('\n')[0].strip()), 0))
          
       else:
-         raise Exception, "Input grid does not exist"
+         raise Exception, "Input grid does not exist: %s" % self.inFn
 
       if os.path.exists(self.cFn):
          self.cMtx = numpy.loadtxt(self.cFn, skiprows=6)

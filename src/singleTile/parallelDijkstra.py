@@ -11,6 +11,7 @@ import heapq
 #from logging.handlers import RotatingFileHandler
 import numpy as np
 import os
+import time
 
 from singleTile.base import SingleTileLCP
 
@@ -28,7 +29,8 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
    
    # ..........................
    def setStepSize(self, step):
-      self.step = self.cMtx.shape[0] * step
+      self.step = int(self.cMtx.shape[0] * step)
+      print "Set step size to:", self.step
       
    # ..........................
    def setMaxWorkers(self, maxWorkers):
@@ -195,7 +197,7 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
       #log.debug("Number of chunks: %s" % len(self.chunks))
       #log.debug("Shape: %s, %s" % self.cMtx.shape)
    
-   def writeChangedVectors(self, outDir, taskId='unknown'):
+   def writeChangedVectors(self, outDir, taskId='unknown', ts=1.0, dTime=0.0):
       self.newLeft = self.cMtx[:,0]
       self.newRight = self.cMtx[:, self.cMtx.shape[1]-1]
       self.newTop = self.cMtx[0]
@@ -232,16 +234,23 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
       with open(os.path.join(outDir, '%s-summary.txt' % taskId), 'w') as outF:
          outF.write("%s\n" % self.minLong)# Min x
          outF.write("%s\n" % self.minLat) # Min y
-         outF.write("%s\n" % (self.minLong +1)) # Max x
-         outF.write("%s\n" % (self.minLat + 1)) # Maxy y
+         try:
+            newMaxLong = self.minLong + ts
+         except Exception, e:
+            newMaxLong = str(e)
+         outF.write("%s\n" % newMaxLong) # Max x
+         outF.write("%s\n" % (self.minLat + ts)) # Maxy y
          outF.write("%s\n" % l) # Left modified
          outF.write("%s\n" % t) # Top modified
          outF.write("%s\n" % r) # Right modified
          outF.write("%s\n" % b) # Bottom modified
          outF.write("%s\n" % self.cellsChanged)
+         outF.write("%s\n" % dTime)
       
 # .............................................................................
 if __name__ == "__main__":
+   
+   aTime = time.time()
    
    parser = argparse.ArgumentParser()
    
@@ -253,41 +262,52 @@ if __name__ == "__main__":
    parser.add_argument('-s', '--fromSide', type=int, help="Source vector is from this side 0: left, 1: top, 2: right, 3: bottom", nargs="*")
    parser.add_argument('-o', help="File to write outputs")
    parser.add_argument('-w', type=int, help="Maximum number of worker threads")
-   parser.add_argument('--step', type=int, help="The step size to use")
+   parser.add_argument('--step', type=float, help="The step size to use")
+   parser.add_argument('--ts', type=float)
 
    args = parser.parse_args()
+   print args
    
    def costFn(i, x, y, z):
       return max(i, y)
 
-   tile = SingleTileParallellDijkstraLCP(args.dem, args.costSurface, costFn)
-
-   if args.fromSide is None or args.vect is None or len(args.fromSide) == 0 or len(args.vect) == 0:
-      tile.findSourceCells()
-   else:
-      for sVect, fromDir in zip(args.vect, args.fromSide):
-         sourceVector = np.load(sVect)
-         tile.addSourceVector(sourceVector, fromDir)
+   try:
+      tile = SingleTileParallellDijkstraLCP(args.dem, args.costSurface, costFn)
    
-   if args.w is not None:
-      tile.setMaxWorkers(args.w)
-   else:
-      tile.setMaxWorkers(50)
+      if args.fromSide is None or args.vect is None or len(args.fromSide) == 0 or len(args.vect) == 0:
+         tile.findSourceCells()
+      else:
+         for sVect, fromDir in zip(args.vect, args.fromSide):
+            sourceVector = np.load(sVect)
+            tile.addSourceVector(sourceVector, fromDir)
       
-   if args.step is not None:
-      tile.setStepSize(args.step)
-   else:
-      tile.setStepSize(150)
-
-
-   tile.calculate()
+      if args.w is not None:
+         tile.setMaxWorkers(args.w)
+      else:
+         tile.setMaxWorkers(50)
+      
+      print "Set step size?"   
+      if args.step is not None:
+         print "Setting step size to:", args.step
+         tile.setStepSize(args.step)
+      else:
+         tile.setStepSize(150)
    
-   if args.taskId is not None:
-      taskId = args.taskId
-   else:
-      taskId = 'unknownTask'
+   
+      tile.calculate()
       
-   if args.g is not None:
-      outDir = args.o
-      tile.writeChangedVectors(outDir, taskId)
+      if args.taskId is not None:
+         taskId = args.taskId
+      else:
+         taskId = 'unknownTask'
       
+      bTime = time.time()
+      dTime = bTime - aTime
+      if args.g is not None:
+         outDir = args.o
+         tile.writeChangedVectors(outDir, taskId, ts=args.ts, dTime=dTime)
+   except Exception, e:
+      with open('/home/cjgrady/tile.exception', 'w') as outF:
+         outF.write(str(e))
+         
+            
