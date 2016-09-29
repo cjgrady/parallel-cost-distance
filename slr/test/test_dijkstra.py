@@ -5,7 +5,7 @@
 """
 import time
 
-from singleTile.dijkstra import SingleTileSerialDijkstraLCP
+from slr.singleTile.dijkstra import SingleTileSerialDijkstraLCP
 # .............................................................................
 if __name__ == "__main__":
    

@@ -6,7 +6,7 @@
 """
 import heapq
 
-from singleTile.base import SingleTileLCP
+from slr.singleTile.base import SingleTileLCP
 
 # .............................................................................
 class SingleTileSerialDijkstraLCP(SingleTileLCP):

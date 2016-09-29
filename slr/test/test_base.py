@@ -3,7 +3,7 @@
 """
 import numpy
 
-from singleTile.base import SingleTileLCP
+from slr.singleTile.base import SingleTileLCP
 
 if __name__ == "__main__":
    

@@ -13,7 +13,7 @@ import numpy as np
 import os
 import time
 
-from singleTile.base import SingleTileLCP
+from slr.singleTile.base import SingleTileLCP
 
 #LOG_PATH = '/home/cjgrady/logs/'
 
