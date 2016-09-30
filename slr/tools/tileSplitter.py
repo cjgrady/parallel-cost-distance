@@ -66,7 +66,6 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
          elif line.lower().startswith('cellsize'):
             cellsize = float(re.split(r' +', line.replace('\t', ' '))[1])
             dx = dy = cellsize
-            # TODO: Get x and y size from this
             numHeaders += 1
          elif line.lower().startswith('dx'):
             dx = float(re.split(r' +', line.replace('\t', ' '))[1])
@@ -81,7 +80,7 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
             #TODO: This will probably fail, need to be able to get lower left corner
             numHeaders += 1
          else:
-            print line[:40]
+            #print line[:40]
             break
    
    # Get x and y cells per tile

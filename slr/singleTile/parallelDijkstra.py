@@ -15,8 +15,6 @@ import time
 
 from slr.singleTile.base import SingleTileLCP
 
-#LOG_PATH = '/home/cjgrady/logs/'
-
 # .............................................................................
 class SingleTileParallellDijkstraLCP(SingleTileLCP):
    """
@@ -29,11 +27,19 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
    
    # ..........................
    def setStepSize(self, step):
+      """
+      @summary: Set the step size for parallelization within tile
+      @param step: Step size as percentage of tile size (0.0, 1.0]
+      """
       self.step = int(self.cMtx.shape[0] * step)
       print "Set step size to:", self.step
       
    # ..........................
    def setMaxWorkers(self, maxWorkers):
+      """
+      @summary: Set the maximum number of worker threads
+      @param maxWorkers: Maximum number of threads to use
+      """
       self.maxWorkers = maxWorkers
       
    # ..........................
@@ -79,18 +85,16 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
       with concurrent.futures.ThreadPoolExecutor(max_workers=self.maxWorkers) as executor:
          ccc = True
          while ccc:
-         #while len(self.chunks) > 0 and not all([t.done() for t in ts]):
             if len(self.chunks) > 0:
                chunk = self.chunks.pop(0)
                t =  executor.submit(self.dijkstraChunk, chunk)
                ts.append(t)
             ggg = all([t.done() for t in ts])
-            ccc = len(self.chunks) != 0 or not ggg
+            ccc = len(self.chunks) > 0 or not ggg
       print "Done2"      
-      #sleep(10)
       
    # ..........................
-   def dijkstraChunk(self, chunk):#minx, miny, maxx, maxy, sourceCells):
+   def dijkstraChunk(self, chunk):
       minx, miny, maxx, maxy, sourceCells = chunk
       
       name = '%s-%s-%s-%s' % (minx, miny, maxx, maxy)
@@ -106,9 +110,7 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          """
          @summary: Add a cell to the heap if appropriate
          """
-         #log.debug("Adding cell: %s %s %s" % (x, y, cost))
          if int(self.cMtx[y][x]) == int(self.noDataValue) or self.cMtx[y][x] > cost:
-            #log.debug("Adding to heap")
             heapq.heappush(hq, (cost, x, y))
    
       # ........................
@@ -264,6 +266,7 @@ if __name__ == "__main__":
    parser.add_argument('-w', type=int, help="Maximum number of worker threads")
    parser.add_argument('--step', type=float, help="The step size to use")
    parser.add_argument('--ts', type=float)
+   parser.add_argument('-e', type=str, help="Log errors to this file location")
 
    args = parser.parse_args()
    print args
@@ -307,7 +310,8 @@ if __name__ == "__main__":
          outDir = args.o
          tile.writeChangedVectors(outDir, taskId, ts=args.ts, dTime=dTime)
    except Exception, e:
-      with open('/home/cjgrady/tile.exception', 'w') as outF:
-         outF.write(str(e))
+      if args.e is not None:
+         with open(args.e, 'w') as outF:
+            outF.write(str(e))
          
             
