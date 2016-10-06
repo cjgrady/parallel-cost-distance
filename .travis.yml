@@ -7,4 +7,6 @@ before_install:
 install: "pip install -r requirements.txt"
 before_script:
   - export PATH=$PATH:$PWD/cctools/bin/
-script: nosetests
+script: nosetests --with-coverage
+after_success:
+  - coveralls
