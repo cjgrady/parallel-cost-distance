@@ -1,8 +1,4 @@
 # irksome-broccoli
 
-Variable parallel mechanisms
- * concurrent futures
-   * processes
-   * threads
- * Celery / rabbitMQ
+[![Build Status](https://travis-ci.org/cjgrady/irksome-broccoli.svg?branch=master)](https://travis-ci.org/cjgrady/irksome-broccoli)
 
