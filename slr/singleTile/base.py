@@ -106,44 +106,45 @@ class SingleTileLCP(object):
    def initialize(self):
       """
       @summary: Initialize the object (read / prep files)
-      @todo: Handle headers with other than 6 rows (dx / dy resolution)
-      @todo: Pull out header information that may be needed
       """
+      self.noData = None 
+      
       if os.path.exists(self.inFn):
          numHeaders = 0
          with open(self.inFn) as f:
-            if line.lower().startswith('ncols'):
-               ncols = int(re.split(r' +', line.replace('\t', ' '))[1])
-               numHeaders += 1
-            elif line.lower().startswith('nrows'):
-               nrows = int(re.split(r' +', line.replace('\t', ' '))[1])
-               numHeaders += 1
-            elif line.lower().startswith('xllcorner'):
-               #TODO: Round?
-               self.minLong = float(re.split(r' +', line.replace('\t', ' '))[1])
-               numHeaders += 1
-            elif line.lower().startswith('yllcorner'):
-               #TODO: Round?
-               self.minLat = float(re.split(r' +', line.replace('\t', ' '))[1])
-               numHeaders += 1
-            elif line.lower().startswith('cellsize'):
-               self.cellsize = float(re.split(r' +', line.replace('\t', ' '))[1])
-               dx = dy = self.cellsize
-               numHeaders += 1
-            elif line.lower().startswith('dx'):
-               dx = float(re.split(r' +', line.replace('\t', ' '))[1])
-               numHeaders += 1
-            elif line.lower().startswith('dy'):
-               dy = float(re.split(r' +', line.replace('\t', ' '))[1])
-               numHeaders += 1
-            elif line.lower().startswith('nodata_value'):
-               self.noData = float(re.split(r' +', line.replace('\t', ' '))[1])
-               numHeaders += 1
-            elif line.lower().startswith('xllce') or line.lower().startswith('yllce'):
-               #TODO: This will probably fail, need to be able to get lower left corner
-               numHeaders += 1
-            else:
-               break
+            for line in f:
+               if line.lower().startswith('ncols'):
+                  ncols = int(re.split(r' +', line.replace('\t', ' '))[1])
+                  numHeaders += 1
+               elif line.lower().startswith('nrows'):
+                  nrows = int(re.split(r' +', line.replace('\t', ' '))[1])
+                  numHeaders += 1
+               elif line.lower().startswith('xllcorner'):
+                  #TODO: Round?
+                  self.minLong = float(re.split(r' +', line.replace('\t', ' '))[1])
+                  numHeaders += 1
+               elif line.lower().startswith('yllcorner'):
+                  #TODO: Round?
+                  self.minLat = float(re.split(r' +', line.replace('\t', ' '))[1])
+                  numHeaders += 1
+               elif line.lower().startswith('cellsize'):
+                  self.cellsize = float(re.split(r' +', line.replace('\t', ' '))[1])
+                  dx = dy = self.cellsize
+                  numHeaders += 1
+               elif line.lower().startswith('dx'):
+                  dx = float(re.split(r' +', line.replace('\t', ' '))[1])
+                  numHeaders += 1
+               elif line.lower().startswith('dy'):
+                  dy = float(re.split(r' +', line.replace('\t', ' '))[1])
+                  numHeaders += 1
+               elif line.lower().startswith('nodata_value'):
+                  self.noData = float(re.split(r' +', line.replace('\t', ' '))[1])
+                  numHeaders += 1
+               elif line.lower().startswith('xllce') or line.lower().startswith('yllce'):
+                  #TODO: This will probably fail, need to be able to get lower left corner
+                  numHeaders += 1
+               else:
+                  break
          
          self.inMtx = numpy.loadtxt(self.inFn, skiprows=numHeaders)
          
