@@ -4,6 +4,7 @@ python:
 before_install:
   - sudo apt-get install perl perl-debug
   - ./install-cctools.sh
+install: "pip install -r requirements.txt"
 before_script:
   - export PATH=$PATH:$PWD/cctools/bin/
 script: nosetests
