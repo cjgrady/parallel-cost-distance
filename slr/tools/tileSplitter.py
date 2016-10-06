@@ -43,8 +43,6 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
    @param xOffset: (optional) Offset the tiles this many cells in the X direction
    @param yOffset: (optional) Offset the tiles this many cells in the Y direction
    """
-   # TODO: get x and y cells from cell size
-   
    # Get headers
    numHeaders = 0
    with open(fn) as inF:
