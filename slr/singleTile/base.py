@@ -35,7 +35,7 @@ class SingleTileLCP(object):
       self.costFn = costFn
       self.sourceCells = []
       
-      self.initialize()
+      self._initialize()
    
    # ..........................
    def addSourceVector(self, vect, originSide):
@@ -90,7 +90,7 @@ class SingleTileLCP(object):
                    the tile to a source cell
       """
       self._calculate()
-      self.writeOutputs()
+      self._writeOutputs()
 
    # ..........................
    def findSourceCells(self, sourceValue=None):
@@ -103,7 +103,7 @@ class SingleTileLCP(object):
          self.cMtx[y][x] = 0#self.inMtx[y,x]
    
    # ..........................
-   def initialize(self):
+   def _initialize(self):
       """
       @summary: Initialize the object (read / prep files)
       """
@@ -157,7 +157,7 @@ class SingleTileLCP(object):
          self.cMtx = numpy.ones(shape=self.inMtx.shape) * self.noDataValue
 
    # ..........................
-   def writeOutputs(self):
+   def _writeOutputs(self):
       """
       @summary: Write output files (cost surface)
       """
