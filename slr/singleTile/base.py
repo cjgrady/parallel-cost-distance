@@ -34,6 +34,8 @@ class SingleTileLCP(object):
       self.cFn = costFilename
       self.costFn = costFn
       self.sourceCells = []
+      #TODO: Handle when no no data value is provided / better default
+      self.noDataValue = -9999
       
       self._initialize()
    
@@ -61,22 +63,18 @@ class SingleTileLCP(object):
          costVect = self.cMtx[self.cMtx.shape[0]-1,:]
          cmpVect = self._squishStretchVector(vect, len(inVect))
          getSourceCoords = lambda j: (self.cMtx.shape[0]-1, j)
-         
-      else:
+      elif originSide == 3:
          inVect = self.inMtx[:,self.cMtx.shape[1] -1]
          costVect = self.cMtx[:,self.cMtx.shape[1] -1]
          cmpVect = self._squishStretchVector(vect, len(inVect))
          getSourceCoords = lambda j: (j, self.cMtx.shape[1] - 1)
+      else:
+         raise Exception, "Cannot add source vector for side: %s" % originSide 
 
-      # Get the length of the array that we are comparing to
-      # Shrink / stretch the comp vector as appropriate
-      # Loop through the arrays
-      # If the existing cost has not been calculated, and the vector cost has, update the cost
-      #    or if the existing cost is greater than the compared
-      
       # For each element in the array
       for i in xrange(len(cmpVect)):
          # Get cost to inundate
+         # TODO: This should use cost function
          c = max(inVect[i], cmpVect[i])
          if int(costVect[i]) == int(self.noDataValue) or costVect[i] > c:
             costVect[i] = c
@@ -98,6 +96,7 @@ class SingleTileLCP(object):
       @summary: Find source cells in the input grid
       @param sourceValue: Source cells are grid cells with this value
       """
+      #TODO: Make this smarter
       self.sourceCells = numpy.vstack(numpy.where(self.inMtx <= 0)[::-1]).T
       for x, y in self.sourceCells:
          self.cMtx[y][x] = 0#self.inMtx[y,x]
@@ -107,49 +106,59 @@ class SingleTileLCP(object):
       """
       @summary: Initialize the object (read / prep files)
       """
-      self.noData = None 
-      
       if os.path.exists(self.inFn):
          numHeaders = 0
+         hs = []
          with open(self.inFn) as f:
             for line in f:
                if line.lower().startswith('ncols'):
                   ncols = int(re.split(r' +', line.replace('\t', ' '))[1])
+                  hs.append(line)
                   numHeaders += 1
                elif line.lower().startswith('nrows'):
                   nrows = int(re.split(r' +', line.replace('\t', ' '))[1])
                   numHeaders += 1
+                  hs.append(line)
                elif line.lower().startswith('xllcorner'):
                   #TODO: Round?
                   self.minLong = float(re.split(r' +', line.replace('\t', ' '))[1])
                   numHeaders += 1
+                  hs.append(line)
                elif line.lower().startswith('yllcorner'):
                   #TODO: Round?
                   self.minLat = float(re.split(r' +', line.replace('\t', ' '))[1])
                   numHeaders += 1
+                  hs.append(line)
                elif line.lower().startswith('cellsize'):
-                  self.cellsize = float(re.split(r' +', line.replace('\t', ' '))[1])
-                  dx = dy = self.cellsize
+                  self.cellSize = float(re.split(r' +', line.replace('\t', ' '))[1])
+                  dx = dy = self.cellSize
                   numHeaders += 1
+                  hs.append(line)
                elif line.lower().startswith('dx'):
                   dx = float(re.split(r' +', line.replace('\t', ' '))[1])
                   numHeaders += 1
+                  hs.append(line)
                elif line.lower().startswith('dy'):
                   dy = float(re.split(r' +', line.replace('\t', ' '))[1])
                   numHeaders += 1
+                  hs.append(line)
                elif line.lower().startswith('nodata_value'):
                   self.noData = float(re.split(r' +', line.replace('\t', ' '))[1])
                   numHeaders += 1
+                  hs.append(line)
                elif line.lower().startswith('xllce') or line.lower().startswith('yllce'):
                   #TODO: This will probably fail, need to be able to get lower left corner
                   numHeaders += 1
+                  hs.append(line)
                else:
                   break
+         
+         self.headers = ''.join(hs)
          
          self.inMtx = numpy.loadtxt(self.inFn, skiprows=numHeaders)
          
       else:
-         raise Exception, "Input grid does not exist: %s" % self.inFn
+         raise IOError, "Input grid does not exist: %s" % self.inFn
 
       if os.path.exists(self.cFn):
          self.cMtx = numpy.loadtxt(self.cFn, skiprows=6)
@@ -170,7 +179,7 @@ class SingleTileLCP(object):
                    source cell
       @note: This method should be implemented in subclasses
       """
-      pass
+      raise NotImplementedError, "_calculate method is not implemented"
    
    # ..........................
    def _squishStretchVector(self, vect, toSize):

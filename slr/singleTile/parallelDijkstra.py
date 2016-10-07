@@ -13,10 +13,11 @@ import numpy as np
 import os
 import time
 
+from slr.common.costFunctions import seaLevelRiseCostFn
 from slr.singleTile.base import SingleTileLCP
 
 # .............................................................................
-class SingleTileParallellDijkstraLCP(SingleTileLCP):
+class SingleTileParallelDijkstraLCP(SingleTileLCP):
    """
    @summary: This is the serial Dijkstra implementation
    """
@@ -87,14 +88,13 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          while ccc:
             if len(self.chunks) > 0:
                chunk = self.chunks.pop(0)
-               t =  executor.submit(self.dijkstraChunk, chunk)
+               t =  executor.submit(self._dijkstraChunk, chunk)
                ts.append(t)
             ggg = all([t.done() for t in ts])
             ccc = len(self.chunks) > 0 or not ggg
-      print "Done2"      
       
    # ..........................
-   def dijkstraChunk(self, chunk):
+   def _dijkstraChunk(self, chunk):
       minx, miny, maxx, maxy, sourceCells = chunk
       
       name = '%s-%s-%s-%s' % (minx, miny, maxx, maxy)
@@ -139,6 +139,7 @@ class SingleTileParallellDijkstraLCP(SingleTileLCP):
          if y > maxy:
             cmpy = maxy
          
+         #TODO: This should use the cost function
          c = max(self.cMtx[y][x], self.inMtx[cmpy][cmpx], 0)
          
          if cmpx != x or cmpy != y:
@@ -271,11 +272,8 @@ if __name__ == "__main__":
    args = parser.parse_args()
    print args
    
-   def costFn(i, x, y, z):
-      return max(i, y)
-
    try:
-      tile = SingleTileParallellDijkstraLCP(args.dem, args.costSurface, costFn)
+      tile = SingleTileParallellDijkstraLCP(args.dem, args.costSurface, seaLevelRiseCostFn)
    
       if args.fromSide is None or args.vect is None or len(args.fromSide) == 0 or len(args.vect) == 0:
          tile.findSourceCells()

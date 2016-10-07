@@ -62,4 +62,4 @@ class SingleTileSerialDijkstraLCP(SingleTileLCP):
          if self.cMtx[y][x] == self.noDataValue or cost < self.cMtx[y][x]:
             self.cMtx[y][x] = cost
             addNeighbors(x, y, cost)
-      
+
