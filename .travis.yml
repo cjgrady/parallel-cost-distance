@@ -6,11 +6,13 @@ before_install:
   - ./install-cctools.sh
 install: "pip install -r requirements.txt"
 env:
-  - PYTHONPATH=$PWD/cctools/lib/python2.7/site-packages/
-  - PATH=$PATH/:$PWD/cctools/bin/
+  global:
+    - PYTHONPATH=/home/travis/cctools/lib/python2.7/site-packages/
+    - PATH=$PATH/:/home/travis/cctools/bin/
 before_script:
   - echo $PYTHONPATH
   - echo $PATH
+  - ls /home/travis/
 script: nosetests --with-coverage --cover-package=slr
 after_success:
   - coveralls
