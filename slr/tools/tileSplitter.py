@@ -141,7 +141,7 @@ if __name__ == "__main__":
                      help="Offset the grid this many cells in the x direction")
    parser.add_argument('-y', '--yOffset', type=int, 
                      help="Offset the grid this many cells in the y direction")
-   parser.add_argument('-d', '--debug', type=int, choice=[0,1], 
+   parser.add_argument('-d', '--debug', type=int, choices=[0,1], 
                        help="Enable debugging (1 for yes, 0 for no)")
    
    args = parser.parse_args()
@@ -150,13 +150,13 @@ if __name__ == "__main__":
    yOffset = 0
    debug = False
    
-   if args.x is not None:
+   if args.xOffset is not None:
       xOffset = args.x
       
-   if args.y is not None:
+   if args.yOffset is not None:
       yOffset = args.y
    
-   if args.d is not None:
+   if args.debug is not None:
       debug = bool(args.d)
       
    splitTile(args.fn, args.tileSize, args.outDir, xOffset=xOffset, 
