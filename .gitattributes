@@ -1,0 +1,2 @@
+xl*.asc filter=lfs diff=lfs merge=lfs -text
+*xlarge*.asc filter=lfs diff=lfs merge=lfs -text
