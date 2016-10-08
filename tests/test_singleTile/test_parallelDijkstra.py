@@ -10,8 +10,7 @@ from slr.common.costFunctions import seaLevelRiseCostFn
 
 from slr.singleTile.parallelDijkstra import SingleTileParallelDijkstraLCP
 
-from tests.helpers.testConstants import (L_COST_RASTER, L_INPUT_RASTER, 
-         XL_COST_RASTER, XL_INPUT_RASTER)
+from tests.helpers.testConstants import (L_COST_RASTER, L_INPUT_RASTER)
 
 
 # .............................................................................
@@ -110,50 +109,3 @@ def test_calculate_large_unevenSteps_16workers():
    
    assert np.array_equiv(computedArray, costArray)
    
-# .............................................................................
-def test_calculate_xlarge_evenSteps():
-   """
-   @summary: Tests that calculations work for a single tile (xlarge)
-   """
-   # We just need a name, not a file
-   tf = NamedTemporaryFile(delete=True)
-   cAryFn = tf.name
-   tf.close()
-   myInstance = SingleTileParallelDijkstraLCP(XL_INPUT_RASTER, cAryFn, 
-                              seaLevelRiseCostFn)
-   myInstance.setMaxWorkers(32)
-   myInstance.setStepSize(100)
-   myInstance.findSourceCells()
-   myInstance.calculate()
-   
-   computedArray = np.loadtxt(cAryFn, dtype=int, comments='', skiprows=6)
-   costArray = np.loadtxt(XL_COST_RASTER, dtype=int, comments='', skiprows=6)
-   
-   # Delete temp file
-   os.remove(cAryFn)
-   
-   assert np.array_equiv(computedArray, costArray)
-
-# .............................................................................
-def test_calculate_xlarge_unevenSteps():
-   """
-   @summary: Tests that calculations work for a single tile (xlarge)
-   """
-   # We just need a name, not a file
-   tf = NamedTemporaryFile(delete=True)
-   cAryFn = tf.name
-   tf.close()
-   myInstance = SingleTileParallelDijkstraLCP(XL_INPUT_RASTER, cAryFn, 
-                              seaLevelRiseCostFn)
-   myInstance.setMaxWorkers(32)
-   myInstance.setStepSize(333)
-   myInstance.findSourceCells()
-   myInstance.calculate()
-   
-   computedArray = np.loadtxt(cAryFn, dtype=int, comments='', skiprows=6)
-   costArray = np.loadtxt(XL_COST_RASTER, dtype=int, comments='', skiprows=6)
-   
-   # Delete temp file
-   os.remove(cAryFn)
-   
-   assert np.array_equiv(computedArray, costArray)

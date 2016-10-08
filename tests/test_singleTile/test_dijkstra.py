@@ -11,8 +11,7 @@ from slr.common.costFunctions import seaLevelRiseCostFn
 from slr.singleTile.dijkstra import SingleTileSerialDijkstraLCP
 
 from tests.helpers.testConstants import (L_COST_RASTER, L_INPUT_RASTER, 
-         M_COST_RASTER, M_INPUT_RASTER, S_COST_RASTER, S_INPUT_RASTER, 
-         XL_COST_RASTER, XL_INPUT_RASTER)
+         M_COST_RASTER, M_INPUT_RASTER, S_COST_RASTER, S_INPUT_RASTER)
 
 # .............................................................................
 # .                              Calculate Tests                              .
@@ -82,24 +81,3 @@ def test_calculate_large():
    
    assert np.array_equiv(computedArray, costArray)
    
-# .............................................................................
-def test_calculate_xlarge():
-   """
-   @summary: Tests that calculations work for a single tile (xlarge)
-   """
-   # We just need a name, not a file
-   tf = NamedTemporaryFile(delete=True)
-   cAryFn = tf.name
-   tf.close()
-   myInstance = SingleTileSerialDijkstraLCP(XL_INPUT_RASTER, cAryFn, 
-                              seaLevelRiseCostFn)
-   myInstance.findSourceCells()
-   myInstance.calculate()
-   
-   computedArray = np.loadtxt(cAryFn, dtype=int, comments='', skiprows=6)
-   costArray = np.loadtxt(XL_COST_RASTER, dtype=int, comments='', skiprows=6)
-   
-   # Delete temp file
-   os.remove(cAryFn)
-   
-   assert np.array_equiv(computedArray, costArray)
