@@ -12,6 +12,7 @@ import heapq
 import numpy as np
 import os
 import time
+import traceback
 
 from slr.common.costFunctions import seaLevelRiseCostFn
 from slr.singleTile.base import SingleTileLCP
@@ -75,12 +76,13 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       for k in startChunks.keys():
          minX, minY, maxX, maxY = startChunks[k]['bbox']
          self.chunks.append((minX, minY, maxX, maxY, startChunks[k]['sourceCells']))
-      
-      self.origLeft = np.copy(self.cMtx[:,0])
-      self.origRight = np.copy(self.cMtx[:, self.cMtx.shape[1]-1])
-      self.origTop = np.copy(self.cMtx[0])
-      self.origBottom = np.copy(self.cMtx[self.cMtx.shape[0]-1, :])
-      
+      try:
+         self.origLeft = np.copy(self.cMtx[:,0])
+         self.origRight = np.copy(self.cMtx[:, self.cMtx.shape[1]-1])
+         self.origTop = np.copy(self.cMtx[0])
+         self.origBottom = np.copy(self.cMtx[self.cMtx.shape[0]-1, :])
+      except:
+         raise Exception, self.cMtx.shape
       ts = []
       
       with concurrent.futures.ThreadPoolExecutor(max_workers=self.maxWorkers) as executor:
@@ -273,7 +275,7 @@ if __name__ == "__main__":
    print args
    
    try:
-      tile = SingleTileParallellDijkstraLCP(args.dem, args.costSurface, seaLevelRiseCostFn)
+      tile = SingleTileParallelDijkstraLCP(args.dem, args.costSurface, seaLevelRiseCostFn)
    
       if args.fromSide is None or args.vect is None or len(args.fromSide) == 0 or len(args.vect) == 0:
          tile.findSourceCells()
@@ -308,8 +310,10 @@ if __name__ == "__main__":
          outDir = args.o
          tile.writeChangedVectors(outDir, taskId, ts=args.ts, dTime=dTime)
    except Exception, e:
+      tb = traceback.format_exc()
       if args.e is not None:
          with open(args.e, 'w') as outF:
             outF.write(str(e))
+            outF.write(tb)
          
             
