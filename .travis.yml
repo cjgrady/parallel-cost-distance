@@ -2,7 +2,7 @@ language: python
 python:
   - "2.7"
 before_install:
-  - sudo apt-get install perl perl-debug swig
+  - sudo apt-get install perl perl-debug libperl-dev swig
   - ./install-cctools.sh
 install: "pip install -r requirements.txt"
 env:
