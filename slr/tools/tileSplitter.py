@@ -82,8 +82,8 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
             break
    
    # Get x and y cells per tile
-   xCells = ts / dx
-   yCells = ts / dy
+   xCells = int(ts / dx)
+   yCells = int(ts / dy)
    
    if debug:
       print "Num cols:", ncols
@@ -151,13 +151,13 @@ if __name__ == "__main__":
    debug = False
    
    if args.xOffset is not None:
-      xOffset = args.x
+      xOffset = args.xOffset
       
    if args.yOffset is not None:
-      yOffset = args.y
+      yOffset = args.yOffset
    
    if args.debug is not None:
-      debug = bool(args.d)
+      debug = bool(args.debug)
       
    splitTile(args.fn, args.tileSize, args.outDir, xOffset=xOffset, 
              yOffset=yOffset, debug=debug)
