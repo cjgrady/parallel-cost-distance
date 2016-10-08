@@ -33,8 +33,9 @@ L_COST_RASTER = os.path.join(COSTS_PATH, 'largeCost.asc')
 L_INPUT_RASTER_NO_SOURCES = os.path.join(SURFACES_PATH, 'largeNoSources.asc')
 
 # 10000 x 10000
-XL_INPUT_RASTER = os.path.join(SURFACES_PATH, 'xlarge.asc')
-XL_COST_RASTER = os.path.join(COSTS_PATH, 'xlargeCost.asc')
+# These were too big for github
+#XL_INPUT_RASTER = os.path.join(SURFACES_PATH, 'xlarge.asc')
+#XL_COST_RASTER = os.path.join(COSTS_PATH, 'xlargeCost.asc')
 
 # Below sea-level raster
 BELOW_SEA_LEVEL_RASTER = os.path.join(SURFACES_PATH, 'underSL.asc')
