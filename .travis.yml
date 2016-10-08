@@ -12,7 +12,7 @@ env:
 before_script:
   - echo $PYTHONPATH
   - echo $PATH
-  - ls /home/travis/
+  - ls $PYTHONPATH
 script: nosetests --with-coverage --cover-package=slr
 after_success:
   - coveralls
