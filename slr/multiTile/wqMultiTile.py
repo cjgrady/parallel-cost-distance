@@ -5,6 +5,7 @@
 import argparse
 import glob
 import os
+import signal
 import sys
 import time
 from work_queue import *
@@ -12,6 +13,9 @@ from work_queue import *
 import slr.singleTile.parallelDijkstra
 
 PYTHON_BIN = sys.executable
+# Assume that work queue is in path
+WORKER_BIN = "work_queue_worker"
+WORKER_PYTHONPATH = "export PYTHONPATH=/home/cjgrady/cctools/lib/python2.7/site-packages/:/home/cjgrady/git/irksome-broccoli/"
 
 # .............................................................................
 def getParallelDijkstraModulePath():
@@ -75,7 +79,7 @@ class MultiTileWqParallelDijkstraLCP(object):
             inGrid=self._getGridFilename(self.inDir, minx, miny, maxx, maxy),
             costGrid=self._getGridFilename(self.cDir, minx, miny, maxx, maxy),
             ss=self.stepSize, ts=self.tileSize, outputsPath=self.oDir, taskId=tag,
-            e=os.path.join('/home/cjgrady/temp', '%s.error' % tag))
+            e=os.path.join(self.oDir, '%s.error' % tag))
       task.specify_command(cmd)
       task.specify_output_file(self._getSummaryFile(tag))
       task.specify_tag(str(tag))
@@ -192,8 +196,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                if l:
                   vect = self._getVectorFilename(task.tag, 0)
                   
-                  #myKey = '%s,%s,%s,%s' % (minx-ts, miny, maxx-ts, maxy)
-                  myKey = self._getKey(minx-ts, miny, minx, maxy)
+                  #myKey = '%s,%s,%s,%s' % (minx-self.tileSize, miny, maxx-self.tileSize, maxy)
+                  myKey = self._getKey(minx-self.tileSize, miny, minx, maxy)
                   if myKey in rGrids:
                      if not waitingGrids.has_key(myKey):
                         waitingGrids[myKey] = []
@@ -203,7 +207,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                      print "Submitting for:", myKey
                      tag = currentTag
                      currentTag += 1
-                     nTask = self._getConnectedTask(minx-ts, miny, miny, maxy, [vect], [2], tag)
+                     nTask = self._getConnectedTask(minx-self.tileSize, miny, miny, maxy, [vect], [2], tag)
                      if nTask is not None:
                         rGrids.append(myKey)
                         print "Added", myKey, "to running list", tag
@@ -211,8 +215,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                if t:
                   vect = self._getVectorFilename(task.tag, 1)
                   
-                  #myKey = '%s,%s,%s,%s' % (minx, miny+ts, maxx, maxy+ts)
-                  myKey = self._getKey(minx, maxy, maxx, maxy+ts)
+                  #myKey = '%s,%s,%s,%s' % (minx, miny+self.tileSize, maxx, maxy+self.tileSize)
+                  myKey = self._getKey(minx, maxy, maxx, maxy+self.tileSize)
                   if myKey in rGrids:
                      if not waitingGrids.has_key(myKey):
                         waitingGrids[myKey] = []
@@ -222,7 +226,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                      print "Submitting for:", myKey
                      tag = currentTag
                      currentTag += 1
-                     nTask = self._getConnectedTask(minx, maxy, maxx, maxy+ts, [vect], [3], tag)
+                     nTask = self._getConnectedTask(minx, maxy, maxx, maxy+self.tileSize, [vect], [3], tag)
                      if nTask is not None:
                         rGrids.append(myKey)
                         print "Added", myKey, "to running list", tag
@@ -230,8 +234,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                if r:
                   vect = self._getVectorFilename(task.tag, 2)
    
-                  #myKey = '%s,%s,%s,%s' % (minx+ts, miny, maxx+ts, maxy)
-                  myKey = self._getKey(maxx, miny, maxx+ts, maxy)
+                  #myKey = '%s,%s,%s,%s' % (minx+self.tileSize, miny, maxx+self.tileSize, maxy)
+                  myKey = self._getKey(maxx, miny, maxx+self.tileSize, maxy)
                   if myKey in rGrids:
                      if not waitingGrids.has_key(myKey):
                         waitingGrids[myKey] = []
@@ -241,15 +245,15 @@ class MultiTileWqParallelDijkstraLCP(object):
                      print "Submitting for:", myKey
                      tag = currentTag
                      currentTag += 1
-                     nTask = self._getConnectedTask(maxx, miny, maxx+ts, maxy, [vect], [0], tag)
+                     nTask = self._getConnectedTask(maxx, miny, maxx+self.tileSize, maxy, [vect], [0], tag)
                      if nTask is not None:
                         rGrids.append(myKey)
                         print "Added", myKey, "to running list", tag
                         q.submit(nTask)
                if b:
                   vect = self._getVectorFilename(task.tag, 3)
-                  #myKey = '%s,%s,%s,%s' % (minx, miny-ts, maxx, maxy-ts)
-                  myKey = self._getKey(minx, miny-ts, maxx, miny)
+                  #myKey = '%s,%s,%s,%s' % (minx, miny-self.tileSize, maxx, maxy-self.tileSize)
+                  myKey = self._getKey(minx, miny-self.tileSize, maxx, miny)
                   if myKey in rGrids:
                      if not waitingGrids.has_key(myKey):
                         waitingGrids[myKey] = []
@@ -259,7 +263,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                      print "Submitting for:", myKey
                      tag = currentTag
                      currentTag += 1
-                     nTask = self._getConnectedTask(minx, miny-ts, maxx, miny, [vect], [1], tag)
+                     nTask = self._getConnectedTask(minx, miny-self.tileSize, maxx, miny, [vect], [1], tag)
                      if nTask is not None:
                         rGrids.append(myKey)
                         print "Added", myKey, "to running list", tag
@@ -281,6 +285,19 @@ class MultiTileWqParallelDijkstraLCP(object):
             if r >= 1000:
                outF.write("-1\n")
             outF.write('%s\n' % (bTime - aTime))
+   
+   def startWorkers(self, numWorkers):
+      import subprocess
+      
+      self.workers = []
+      for i in range(numWorkers):
+         cmd = "{0}; {1} {2} {3}".format(WORKER_PYTHONPATH, WORKER_BIN, '127.0.0.1', WORK_QUEUE_DEFAULT_PORT)
+         self.workers.append(subprocess.Popen(cmd, shell=True))
+   
+   def stopWorkers(self):
+      for w in self.workers:
+         print "Sending kill signal"
+         os.killpg(w.pid, signal.SIGTERM)
       
 # .............................................................................
 if __name__ == "__main__":
@@ -304,5 +321,9 @@ if __name__ == "__main__":
    
    myInstance = MultiTileWqParallelDijkstraLCP(inDir, cDir, oDir, ts, stepSize, 
                                                summaryFn=args.outputFile)
+   print "Starting workers"
+   myInstance.startWorkers(2)
    myInstance.calculate()
-
+   print "Stopping workers"
+   myInstance.stopWorkers()
+   print "Done"

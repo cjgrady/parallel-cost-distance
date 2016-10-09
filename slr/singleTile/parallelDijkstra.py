@@ -145,7 +145,17 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          c = max(self.cMtx[y][x], self.inMtx[cmpy][cmpx], 0)
          
          if cmpx != x or cmpy != y:
-            if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or (round(self.cMtx[cmpy][cmpx], 1) -.1 > c and self.cMtx[cmpy][cmpx] >= 0):
+            
+            # Update cost if:
+            #   - cost is no data
+            #   - cost is greater than c
+            #   - cost is less than 0
+            #if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or \
+            #    int(self.cMtx[cmpy][cmpx]) > c or \
+            #    int(self.cMtx[cmpy][cmpx]) < 0:
+            
+            if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or \
+               (int(self.cMtx[cmpy][cmpx]) > c and self.cMtx[cmpy][cmpx] >= 0):
                self.cMtx[cmpy][cmpx] = c
                self.cellsChanged += 1
                addNeighbors(cmpx, cmpy, c)
@@ -161,7 +171,15 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          cost, x, y = heapq.heappop(hq)
          #log.debug("Popped %s, %s, %s" % (cost, x, y))
          #res.append("Popped %s, %s, %s" % (cost, x, y))
-         if int(self.cMtx[y][x]) == int(self.noDataValue) or (cost < round(self.cMtx[y][x], 1) -.1 and self.cMtx[y][x] >= 0):
+
+         # Update cost if:
+         #   - cost is no data
+         #   - cost is greater than c
+         #   - cost is less than 0
+         #if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or \
+         #       int(self.cMtx[cmpy][cmpx]) > cost or \
+         #       int(self.cMtx[cmpy][cmpx]) < 0:
+         if int(self.cMtx[y][x]) == int(self.noDataValue) or (cost < int(self.cMtx[y][x]) and self.cMtx[y][x] >= 0):
             self.cMtx[y][x] = cost
             self.cellsChanged += 1
             #log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
@@ -216,26 +234,35 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       # Look for problems where input data is not no data but output grid is
       
       if self.cellsChanged > 0:
-         if len(np.where((np.round(self.origLeft, 1) -.1 > np.round(self.newLeft, 1)) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
+         #if len(np.where(self.origLeft > self.newLeft) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
+         #if len(np.where((np.round(self.origLeft, 1) -.1 > np.round(self.newLeft, 1)) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
+         if len(np.where((self.origLeft > self.newLeft) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
             fn = os.path.join(outDir, '%s-toLeft.npy' % taskId)
             np.save(fn, self.newLeft)
             l = True
          
-         if len(np.where((np.round(self.origTop, 1) -.1 > np.round(self.newTop, 1)) | (self.origTop+1 >= self.noDataValue))[0]) > 0:
+         #if len(np.where((np.round(self.origTop, 1) -.1 > np.round(self.newTop, 1)) | (self.origTop+1 >= self.noDataValue))[0]) > 0:
+         if len(np.where((self.origTop > self.newTop) | (self.origTop+1 >= self.noDataValue))[0]) > 0:
             fn = os.path.join(outDir, '%s-toTop.npy' % taskId)
             np.save(fn, self.newTop)
             t = True
          
-         if len(np.where((np.round(self.origRight, 1) -.1 > np.round(self.newRight, 1)) | (self.origRight+1 >= self.noDataValue))[0]) > 0:
+         #if len(np.where((np.round(self.origRight, 1) -.1 > np.round(self.newRight, 1)) | (self.origRight+1 >= self.noDataValue))[0]) > 0:
+         if len(np.where((self.origRight > self.newRight) | (self.origRight+1 >= self.noDataValue))[0]) > 0:
             fn = os.path.join(outDir, '%s-toRight.npy' % taskId)
             np.save(fn, self.newRight)
             r = True
          
-         if len(np.where((np.round(self.origBottom, 1) -.1 > np.round(self.newBottom, 1)) | (self.origBottom >= self.noDataValue))[0]) > 0:
+         #if len(np.where((np.round(self.origBottom, 1) -.1 > np.round(self.newBottom, 1)) | (self.origBottom >= self.noDataValue))[0]) > 0:
+         if len(np.where((self.origBottom > self.newBottom) | (self.origBottom >= self.noDataValue))[0]) > 0:
             fn = os.path.join(outDir, '%s-toBottom.npy' % taskId)
             np.save(fn, self.newBottom)
             b = True
-      
+            
+         # Write out cost grid as it stands
+         np.savetxt(os.path.join(outDir, '%s-grid.asc' % taskId), self.cMtx,
+                    header=self.headers, fmt="%i", comments='')
+                    
       with open(os.path.join(outDir, '%s-summary.txt' % taskId), 'w') as outF:
          outF.write("%s\n" % self.minLong)# Min x
          outF.write("%s\n" % self.minLat) # Min y
@@ -294,7 +321,7 @@ if __name__ == "__main__":
          print "Setting step size to:", args.step
          tile.setStepSize(args.step)
       else:
-         tile.setStepSize(150)
+         tile.setStepSize(.15)
    
    
       tile.calculate()

@@ -101,8 +101,8 @@ def test_calculate_large_unevenSteps_16workers():
    myInstance.findSourceCells()
    myInstance.calculate()
    
-   computedArray = np.loadtxt(cAryFn, dtype=int, comments='', skiprows=6)
-   costArray = np.loadtxt(L_COST_RASTER, dtype=int, comments='', skiprows=6)
+   computedArray = np.loadtxt(cAryFn, comments='', skiprows=6)
+   costArray = np.loadtxt(L_COST_RASTER, comments='', skiprows=6)
    
    # Delete temp file
    os.remove(cAryFn)
