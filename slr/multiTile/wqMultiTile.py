@@ -15,7 +15,7 @@ import slr.singleTile.parallelDijkstra
 PYTHON_BIN = sys.executable
 # Assume that work queue is in path
 WORKER_BIN = "work_queue_worker"
-WORKER_PYTHONPATH = "export PYTHONPATH=/home/cjgrady/cctools/lib/python2.7/site-packages/:/home/cjgrady/git/irksome-broccoli/"
+#PATH = "export PYTHONPATH=/home/cjgrady/cctools/lib/python2.7/site-packages/:/home/cjgrady/git/irksome-broccoli/"
 
 # .............................................................................
 def getParallelDijkstraModulePath():
@@ -291,7 +291,8 @@ class MultiTileWqParallelDijkstraLCP(object):
       
       self.workers = []
       for i in range(numWorkers):
-         cmd = "{0}; {1} {2} {3}".format(WORKER_PYTHONPATH, WORKER_BIN, '127.0.0.1', WORK_QUEUE_DEFAULT_PORT)
+         #cmd = "{0}; {1} {2} {3}".format(WORKER_PYTHONPATH, WORKER_BIN, '127.0.0.1', WORK_QUEUE_DEFAULT_PORT)
+         cmd = "{0} {1} {2}".format(WORKER_BIN, '127.0.0.1', WORK_QUEUE_DEFAULT_PORT)
          self.workers.append(subprocess.Popen(cmd, shell=True))
    
    def stopWorkers(self):
