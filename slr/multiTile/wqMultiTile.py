@@ -17,7 +17,10 @@ PYTHON_BIN = sys.executable
 WORKER_BIN = "work_queue_worker"
 #PATH = "export PYTHONPATH=/home/cjgrady/cctools/lib/python2.7/site-packages/:/home/cjgrady/git/irksome-broccoli/"
 # PYTHONPATH to export for workers
-WORKER_PYTHONPATH = "export PYTHONPATH={0}".format(':'.join(sys.path))
+import slr
+pth = os.path.abspath(os.path.join(os.path.dirname(slr.__file__), '..'))
+WORKER_PYTHONPATH = "export PYTHONPATH={pypth}".format(pypth=pth)
+#WORKER_PYTHONPATH = "export PYTHONPATH={0}".format(':'.join(sys.path))
 
 # .............................................................................
 def getParallelDijkstraModulePath():
@@ -294,6 +297,7 @@ class MultiTileWqParallelDijkstraLCP(object):
       self.workers = []
       for i in range(numWorkers):
          cmd = "{0}; {1} {2} {3}".format(WORKER_PYTHONPATH, WORKER_BIN, '127.0.0.1', WORK_QUEUE_DEFAULT_PORT)
+         print cmd
          #cmd = "{0} {1} {2}".format(WORKER_BIN, '127.0.0.1', WORK_QUEUE_DEFAULT_PORT)
          self.workers.append(subprocess.Popen(cmd, shell=True))
    
