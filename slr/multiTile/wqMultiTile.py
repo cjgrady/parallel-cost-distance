@@ -17,7 +17,7 @@ PYTHON_BIN = sys.executable
 WORKER_BIN = "work_queue_worker"
 #PATH = "export PYTHONPATH=/home/cjgrady/cctools/lib/python2.7/site-packages/:/home/cjgrady/git/irksome-broccoli/"
 # PYTHONPATH to export for workers
-WORKER_PYTHONPATH = ':'.join(sys.path)
+WORKER_PYTHONPATH = "export PYTHONPATH={0}".format(':'.join(sys.path))
 
 # .............................................................................
 def getParallelDijkstraModulePath():
