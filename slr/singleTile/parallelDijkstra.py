@@ -31,10 +31,15 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
    def setStepSize(self, step):
       """
       @summary: Set the step size for parallelization within tile
-      @param step: Step size as percentage of tile size (0.0, 1.0]
+      @param step: Step size as percentage of tile size (0.0, 1.0].  If greater
+                      than 1, use as the step size
       """
-      self.step = int(self.cMtx.shape[0] * step)
+      if step > 1.0:
+         self.step = step
+      else:
+         self.step = int(self.cMtx.shape[0] * step)
       print "Set step size to:", self.step
+      print "Cost matrix shape:", self.cMtx.shape
       
    # ..........................
    def setMaxWorkers(self, maxWorkers):
@@ -78,9 +83,9 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          self.chunks.append((minX, minY, maxX, maxY, startChunks[k]['sourceCells']))
       try:
          self.origLeft = np.copy(self.cMtx[:,0])
-         self.origRight = np.copy(self.cMtx[:, self.cMtx.shape[1]-1])
-         self.origTop = np.copy(self.cMtx[0])
-         self.origBottom = np.copy(self.cMtx[self.cMtx.shape[0]-1, :])
+         self.origRight = np.copy(self.cMtx[:, -1])
+         self.origTop = np.copy(self.cMtx[0,:])
+         self.origBottom = np.copy(self.cMtx[-1, :])
       except:
          raise Exception, self.cMtx.shape
       ts = []
@@ -157,6 +162,8 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or \
                (int(self.cMtx[cmpy][cmpx]) > c and self.cMtx[cmpy][cmpx] >= 0):
                self.cMtx[cmpy][cmpx] = c
+               
+               # TODO: Evaluate if we should do this at edges
                self.cellsChanged += 1
                addNeighbors(cmpx, cmpy, c)
             else:
@@ -220,11 +227,12 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       #log.debug("Number of chunks: %s" % len(self.chunks))
       #log.debug("Shape: %s, %s" % self.cMtx.shape)
    
+   # .............................
    def writeChangedVectors(self, outDir, taskId='unknown', ts=1.0, dTime=0.0):
       self.newLeft = self.cMtx[:,0]
-      self.newRight = self.cMtx[:, self.cMtx.shape[1]-1]
-      self.newTop = self.cMtx[0]
-      self.newBottom = self.cMtx[self.cMtx.shape[0]-1, :]
+      self.newRight = self.cMtx[:,-1]
+      self.newTop = self.cMtx[0,:]
+      self.newBottom = self.cMtx[-1, :]
       
       
       l = t = r = b = False
@@ -233,28 +241,34 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       
       # Look for problems where input data is not no data but output grid is
       
+      # TODO: Couldn't I just check for inequality?
+      
       if self.cellsChanged > 0:
          #if len(np.where(self.origLeft > self.newLeft) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
          #if len(np.where((np.round(self.origLeft, 1) -.1 > np.round(self.newLeft, 1)) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
-         if len(np.where((self.origLeft > self.newLeft) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
+         #if len(np.where((self.origLeft > self.newLeft) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
+         if len(np.where(self.origLeft != self.newLeft)[0]) > 0:
             fn = os.path.join(outDir, '%s-toLeft.npy' % taskId)
             np.save(fn, self.newLeft)
             l = True
          
          #if len(np.where((np.round(self.origTop, 1) -.1 > np.round(self.newTop, 1)) | (self.origTop+1 >= self.noDataValue))[0]) > 0:
-         if len(np.where((self.origTop > self.newTop) | (self.origTop+1 >= self.noDataValue))[0]) > 0:
+         #if len(np.where((self.origTop > self.newTop) | (self.origTop+1 >= self.noDataValue))[0]) > 0:
+         if len(np.where(self.origTop != self.newTop)[0]) > 0:
             fn = os.path.join(outDir, '%s-toTop.npy' % taskId)
             np.save(fn, self.newTop)
             t = True
          
          #if len(np.where((np.round(self.origRight, 1) -.1 > np.round(self.newRight, 1)) | (self.origRight+1 >= self.noDataValue))[0]) > 0:
-         if len(np.where((self.origRight > self.newRight) | (self.origRight+1 >= self.noDataValue))[0]) > 0:
+         #if len(np.where((self.origRight > self.newRight) | (self.origRight+1 >= self.noDataValue))[0]) > 0:
+         if len(np.where(self.origRight != self.newRight)[0]) > 0:
             fn = os.path.join(outDir, '%s-toRight.npy' % taskId)
             np.save(fn, self.newRight)
             r = True
          
          #if len(np.where((np.round(self.origBottom, 1) -.1 > np.round(self.newBottom, 1)) | (self.origBottom >= self.noDataValue))[0]) > 0:
-         if len(np.where((self.origBottom > self.newBottom) | (self.origBottom >= self.noDataValue))[0]) > 0:
+         #if len(np.where((self.origBottom > self.newBottom) | (self.origBottom >= self.noDataValue))[0]) > 0:
+         if len(np.where(self.origBottom != self.newBottom)[0]) > 0:
             fn = os.path.join(outDir, '%s-toBottom.npy' % taskId)
             np.save(fn, self.newBottom)
             b = True
