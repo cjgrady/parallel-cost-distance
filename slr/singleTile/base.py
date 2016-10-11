@@ -59,15 +59,15 @@ class SingleTileLCP(object):
          cmpVect = self._squishStretchVector(vect, len(inVect))
          getSourceCoords = lambda j: (j, 0)
       elif originSide == 2:
-         inVect = self.inMtx[self.cMtx.shape[0]-1,:]
-         costVect = self.cMtx[self.cMtx.shape[0]-1,:]
+         inVect = self.inMtx[:,self.cMtx.shape[1]-1]
+         costVect = self.cMtx[:,self.cMtx.shape[1]-1]
          cmpVect = self._squishStretchVector(vect, len(inVect))
-         getSourceCoords = lambda j: (self.cMtx.shape[0]-1, j)
+         getSourceCoords = lambda j: (self.cMtx.shape[1]-1, j)
       elif originSide == 3:
-         inVect = self.inMtx[:,self.cMtx.shape[1] -1]
-         costVect = self.cMtx[:,self.cMtx.shape[1] -1]
+         inVect = self.inMtx[self.cMtx.shape[0] -1,:]
+         costVect = self.cMtx[self.cMtx.shape[0] -1,:]
          cmpVect = self._squishStretchVector(vect, len(inVect))
-         getSourceCoords = lambda j: (j, self.cMtx.shape[1] - 1)
+         getSourceCoords = lambda j: (j, self.cMtx.shape[0] - 1)
       else:
          raise Exception, "Cannot add source vector for side: %s" % originSide 
 
@@ -75,6 +75,7 @@ class SingleTileLCP(object):
       for i in xrange(len(cmpVect)):
          # Get cost to inundate
          # TODO: This should use cost function
+         # TODO: Evaluate this and if we are doing things correctly
          c = max(inVect[i], cmpVect[i])
          if int(costVect[i]) == int(self.noDataValue) or costVect[i] > c:
             costVect[i] = c
@@ -161,9 +162,9 @@ class SingleTileLCP(object):
          raise IOError, "Input grid does not exist: %s" % self.inFn
 
       if os.path.exists(self.cFn):
-         self.cMtx = numpy.loadtxt(self.cFn, skiprows=6)
+         self.cMtx = numpy.loadtxt(self.cFn, skiprows=6, dtype=int)
       else:
-         self.cMtx = numpy.ones(shape=self.inMtx.shape) * self.noDataValue
+         self.cMtx = numpy.ones(shape=self.inMtx.shape, dtype=int) * self.noDataValue
 
    # ..........................
    def _writeOutputs(self):
