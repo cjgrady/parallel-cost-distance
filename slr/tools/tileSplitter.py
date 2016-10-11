@@ -30,7 +30,7 @@ yllcorner   {3}
 cellsize   {4}
 NODATA_value   {5}
 """.format(ncols, nrows, xll, yll, cellsize, noData)
-   np.savetxt(fn, grid, comments='', header=headers)
+   np.savetxt(fn, grid, comments='', header=headers, dtype=int)
 
 # .............................................................................
 def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
