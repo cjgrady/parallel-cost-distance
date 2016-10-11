@@ -22,7 +22,7 @@ from tests.helpers.testConstants import (ONE_DEGREE_TILE_DIR,
                            FOUR_TILE_DIR, FOUR_TILE_COSTS_DIR)
                            
 
-NUM_WORKERS = 1 # Travis core limit
+NUM_WORKERS = 2 # Travis core limit
 
 # .............................................................................
 class TestWqParallelLCP(object):
@@ -42,27 +42,27 @@ class TestWqParallelLCP(object):
       tf.close()
    
    # ............................
-   #def teardown(self):
-   #   """
-   #   @summary: Tear down the test
-   #   """
-   #   # Delete cost directory
-   #   try:
-   #      shutil.rmtree(self.cDir)
-   #   except:
-   #      pass
-   #   
-   #   # Delete output directory
-   #   try:
-   #      shutil.rmtree(self.oDir)
-   #   except:
-   #      pass
-   #   
-   #   # Delete summary file
-   #   try:
-   #      shutil.rmtree(self.summaryFn)
-   #   except:
-   #      pass
+   def teardown(self):
+      """
+      @summary: Tear down the test
+      """
+      # Delete cost directory
+      try:
+         shutil.rmtree(self.cDir)
+      except:
+         pass
+      
+      # Delete output directory
+      try:
+         shutil.rmtree(self.oDir)
+      except:
+         pass
+      
+      # Delete summary file
+      try:
+         shutil.rmtree(self.summaryFn)
+      except:
+         pass
    
    # ............................
    def _checkOutputs(self, cmpDir):
@@ -80,8 +80,8 @@ class TestWqParallelLCP(object):
       for fn in glob.iglob(os.path.join(self.cDir, "*.asc")):
          n = os.path.basename(fn)
          print "Checking:", n
-         a1 = np.loadtxt(fn, comments='', skiprows=6)
-         a2 = np.loadtxt(os.path.join(cmpDir, n), comments='', skiprows=6)
+         a1 = np.loadtxt(fn, comments='', skiprows=6, dtype=int)
+         a2 = np.loadtxt(os.path.join(cmpDir, n), comments='', skiprows=6, dtype=int)
          if not np.array_equiv(a1, a2):
             return False
       return True
@@ -97,55 +97,55 @@ class TestWqParallelLCP(object):
       return d
    
    # ............................
-   #def test_one_degree(self):
-   #   """
-   #   @summary: Test that the outputs are what we expect when using tile sizes
-   #                that are evenly created from test surface
-   #   """
-   #   # Create instance
-   #   myInstance = MultiTileWqParallelDijkstraLCP(ONE_DEGREE_TILE_DIR, 
-   #                        self.cDir, self.oDir, 1.0, .2, 
-   #                        summaryFn=self.summaryFn)
-   #   # Run
-   #   print "Starting workers"
-   #   myInstance.startWorkers(NUM_WORKERS)
-   #   try:
-   #      myInstance.calculate()
-   #   except Exception, e:
-   #      print "stop workers (error)"
-   #      myInstance.stopWorkers()
-   #      raise e
-   #   
-   #   # Only on success
-   #   print "Stopping workers"
-   #   myInstance.stopWorkers()
-   #   print "Done"
-   #   
-   #   # Compare outputs
-   #   assert self._checkOutputs(ONE_DEGREE_TILE_COSTS_DIR)
+   def test_one_degree(self):
+      """
+      @summary: Test that the outputs are what we expect when using tile sizes
+                   that are evenly created from test surface
+      """
+      # Create instance
+      myInstance = MultiTileWqParallelDijkstraLCP(ONE_DEGREE_TILE_DIR, 
+                           self.cDir, self.oDir, 1.0, .2, 
+                           summaryFn=self.summaryFn)
+      # Run
+      print "Starting workers"
+      myInstance.startWorkers(NUM_WORKERS)
+      try:
+         myInstance.calculate()
+      except Exception, e:
+         print "stop workers (error)"
+         myInstance.stopWorkers()
+         raise e
+      
+      # Only on success
+      print "Stopping workers"
+      myInstance.stopWorkers()
+      print "Done"
+      
+      # Compare outputs
+      assert self._checkOutputs(ONE_DEGREE_TILE_COSTS_DIR)
    
    # ............................
-   #def test_six_degree(self):
-   #   """
-   #   @summary: Test that the outputs are what we expect when using tile sizes
-   #                that are not evenly created from test surface
-   #   """
-   #   # Create instance
-   #   myInstance = MultiTileWqParallelDijkstraLCP(SIX_DEGREE_TILE_DIR, 
-   #                        self.cDir, self.oDir, 6.0, .2, 
-   #                        summaryFn=self.summaryFn)
-   #   # Run
-   #   print "Starting workers"
-   #   myInstance.startWorkers(NUM_WORKERS)
-   #   try:
-   #      myInstance.calculate()
-   #   except Exception, e:
-   #      print "stop workers (error)"
-   #      myInstance.stopWorkers()
-   #      raise e
-   #   
-   #   # Compare outputs
-   #   assert self._checkOutputs(SIX_DEGREE_TILE_COSTS_DIR)
+   def test_six_degree(self):
+      """
+      @summary: Test that the outputs are what we expect when using tile sizes
+                   that are not evenly created from test surface
+      """
+      # Create instance
+      myInstance = MultiTileWqParallelDijkstraLCP(SIX_DEGREE_TILE_DIR, 
+                           self.cDir, self.oDir, 6.0, .2, 
+                           summaryFn=self.summaryFn)
+      # Run
+      print "Starting workers"
+      myInstance.startWorkers(NUM_WORKERS)
+      try:
+         myInstance.calculate()
+      except Exception, e:
+         print "stop workers (error)"
+         myInstance.stopWorkers()
+         raise e
+      
+      # Compare outputs
+      assert self._checkOutputs(SIX_DEGREE_TILE_COSTS_DIR)
    
    # ............................
    def test_smaller(self):
