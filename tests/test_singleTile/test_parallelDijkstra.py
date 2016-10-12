@@ -738,6 +738,7 @@ def test_quad_tiles_flow():
    inst5.setMaxWorkers(50)
    inst5.setStepSize(.5)
    inst5.addSourceVector(task1Right, 0)
+   print inst5.sourceCells
    assert len(inst5.sourceCells) == 20
    inst5.addSourceVector(task4Top, 3)
    assert len(inst5.sourceCells) == 39 
