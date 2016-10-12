@@ -97,32 +97,32 @@ class TestWqParallelLCP(object):
       return d
    
    # ............................
-   def test_one_degree(self):
-      """
-      @summary: Test that the outputs are what we expect when using tile sizes
-                   that are evenly created from test surface
-      """
-      # Create instance
-      myInstance = MultiTileWqParallelDijkstraLCP(ONE_DEGREE_TILE_DIR, 
-                           self.cDir, self.oDir, 1.0, .2, 
-                           summaryFn=self.summaryFn)
-      # Run
-      print "Starting workers"
-      myInstance.startWorkers(NUM_WORKERS)
-      try:
-         myInstance.calculate()
-      except Exception, e:
-         print "stop workers (error)"
-         myInstance.stopWorkers()
-         raise e
-      
-      # Only on success
-      print "Stopping workers"
-      myInstance.stopWorkers()
-      print "Done"
-      
-      # Compare outputs
-      assert self._checkOutputs(ONE_DEGREE_TILE_COSTS_DIR)
+   #def test_one_degree(self):
+   #   """
+   #   @summary: Test that the outputs are what we expect when using tile sizes
+   #                that are evenly created from test surface
+   #   """
+   #   # Create instance
+   #   myInstance = MultiTileWqParallelDijkstraLCP(ONE_DEGREE_TILE_DIR, 
+   #                        self.cDir, self.oDir, 1.0, .2, 
+   #                        summaryFn=self.summaryFn)
+   #   # Run
+   #   print "Starting workers"
+   #   myInstance.startWorkers(NUM_WORKERS)
+   #   try:
+   #      myInstance.calculate()
+   #   except Exception, e:
+   #      print "stop workers (error)"
+   #      myInstance.stopWorkers()
+   #      raise e
+   #   
+   #   # Only on success
+   #   print "Stopping workers"
+   #   myInstance.stopWorkers()
+   #   print "Done"
+   #   
+   #   # Compare outputs
+   #   assert self._checkOutputs(ONE_DEGREE_TILE_COSTS_DIR)
    
    # ............................
    def test_six_degree(self):
@@ -148,27 +148,27 @@ class TestWqParallelLCP(object):
       assert self._checkOutputs(SIX_DEGREE_TILE_COSTS_DIR)
    
    # ............................
-   def test_smaller(self):
-      """
-      @summary: Test that the outputs are what we expect when using tile sizes
-                   that are not evenly created from test surface
-      """
-      # Create instance
-      myInstance = MultiTileWqParallelDijkstraLCP(SMALLER_TILE_DIR, 
-                           self.cDir, self.oDir, 10.0, .2, 
-                           summaryFn=self.summaryFn)
-      # Run
-      print "Starting workers"
-      myInstance.startWorkers(NUM_WORKERS)
-      try:
-         myInstance.calculate()
-      except Exception, e:
-         print "stop workers (error)"
-         myInstance.stopWorkers()
-         raise e
-      
-      # Compare outputs
-      assert self._checkOutputs(SMALLER_TILE_COSTS_DIR)
+   #def test_smaller(self):
+   #   """
+   #   @summary: Test that the outputs are what we expect when using tile sizes
+   3                that are not evenly created from test surface
+   #   """
+   #   # Create instance
+   #   myInstance = MultiTileWqParallelDijkstraLCP(SMALLER_TILE_DIR, 
+   #                        self.cDir, self.oDir, 10.0, .2, 
+   #                        summaryFn=self.summaryFn)
+   #   # Run
+   #   print "Starting workers"
+   #   myInstance.startWorkers(NUM_WORKERS)
+   #   try:
+   #      myInstance.calculate()
+   #   except Exception, e:
+   #      print "stop workers (error)"
+   #      myInstance.stopWorkers()
+   #      raise e
+   #   
+   #   # Compare outputs
+   #   assert self._checkOutputs(SMALLER_TILE_COSTS_DIR)
    
    # ............................
    def test_one_tile(self):
@@ -193,46 +193,46 @@ class TestWqParallelLCP(object):
       assert self._checkOutputs(ONE_TILE_COSTS_DIR)
    
    # ............................
-   def test_two_tiles(self):
-      """
-      @summary: Test that the outputs are what we expect when using two tiles
-      """
-      # Create instance
-      myInstance = MultiTileWqParallelDijkstraLCP(TWO_TILE_DIR, 
-                           self.cDir, self.oDir, 1.0, .2, 
-                           summaryFn=self.summaryFn)
-      # Run
-      print "Starting workers"
-      myInstance.startWorkers(NUM_WORKERS)
-      try:
-         myInstance.calculate()
-      except Exception, e:
-         print "stop workers (error)"
-         myInstance.stopWorkers()
-         raise e
+   #def test_two_tiles(self):
+   #   """
+   #   @summary: Test that the outputs are what we expect when using two tiles
+   #   """
+   #   # Create instance
+   #   myInstance = MultiTileWqParallelDijkstraLCP(TWO_TILE_DIR, 
+   #                        self.cDir, self.oDir, 1.0, .2, 
+   #                        summaryFn=self.summaryFn)
+   #   # Run
+   #   print "Starting workers"
+   #   myInstance.startWorkers(NUM_WORKERS)
+   #   try:
+   #      myInstance.calculate()
+   #   except Exception, e:
+   #      print "stop workers (error)"
+   #      myInstance.stopWorkers()
+   #      raise e
       
-      # Compare outputs
-      assert self._checkOutputs(TWO_TILE_COSTS_DIR)
+   #   # Compare outputs
+   #   assert self._checkOutputs(TWO_TILE_COSTS_DIR)
    
    # ............................
-   def test_four_tiles(self):
-      """
-      @summary: Test that the outputs are what we expect when using four tiles
-      """
-      # Create instance
-      myInstance = MultiTileWqParallelDijkstraLCP(FOUR_TILE_DIR, 
-                           self.cDir, self.oDir, 1.0, .2, 
-                           summaryFn=self.summaryFn)
-      # Run
-      print "Starting workers"
-      myInstance.startWorkers(NUM_WORKERS)
-      try:
-         myInstance.calculate()
-      except Exception, e:
-         print "stop workers (error)"
-         myInstance.stopWorkers()
-         raise e
+   #def test_four_tiles(self):
+   #   """
+   #   @summary: Test that the outputs are what we expect when using four tiles
+   #   """
+   #   # Create instance
+   #   myInstance = MultiTileWqParallelDijkstraLCP(FOUR_TILE_DIR, 
+   #                        self.cDir, self.oDir, 1.0, .2, 
+   #                        summaryFn=self.summaryFn)
+   #   # Run
+   #   print "Starting workers"
+   #   myInstance.startWorkers(NUM_WORKERS)
+   #   try:
+   #      myInstance.calculate()
+   #   except Exception, e:
+   #      print "stop workers (error)"
+   #      myInstance.stopWorkers()
+   #      raise e
       
-      # Compare outputs
-      assert self._checkOutputs(FOUR_TILE_COSTS_DIR)
+   #   # Compare outputs
+   #   assert self._checkOutputs(FOUR_TILE_COSTS_DIR)
    
