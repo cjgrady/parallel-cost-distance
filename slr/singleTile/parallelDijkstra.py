@@ -294,7 +294,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          outF.write("%s\n" % dTime)
       
 # .............................................................................
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
    
    aTime = time.time()
    
