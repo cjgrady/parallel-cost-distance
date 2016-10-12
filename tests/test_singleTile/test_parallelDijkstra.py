@@ -210,6 +210,8 @@ def test_calculate_large_unevenSteps_16workers():
    print computedArray
    print costArray
    print np.where(computedArray != costArray)[0]
+   for i in np.where(computedArray != costArray)[0]:
+      print computedArray[i], costArray[i]
    assert np.array_equal(computedArray, costArray)
 
 # .............................................................................
@@ -763,7 +765,7 @@ def test_quad_tiles_flow():
    inst6.setStepSize(.5)
    inst6.addSourceVector(task1Bottom, 1)
    assert len(inst6.sourceCells) == 20
-   inst6.addSourceVector(task4Left, 4)
+   inst6.addSourceVector(task4Left, 2)
    assert len(inst6.sourceCells) == 39 
    inst6.calculate()
    
