@@ -151,7 +151,7 @@ class TestWqParallelLCP(object):
    #def test_smaller(self):
    #   """
    #   @summary: Test that the outputs are what we expect when using tile sizes
-   3                that are not evenly created from test surface
+   #                that are not evenly created from test surface
    #   """
    #   # Create instance
    #   myInstance = MultiTileWqParallelDijkstraLCP(SMALLER_TILE_DIR, 
