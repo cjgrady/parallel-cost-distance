@@ -643,11 +643,11 @@ def test_quad_tiles_flow():
    c2F.close() 
 
    c3F = NamedTemporaryFile(delete=True)
-   cost3Fn = c1F.name
+   cost3Fn = c3F.name
    c3F.close() 
    
    c4F = NamedTemporaryFile(delete=True)
-   cost4Fn = c2F.name
+   cost4Fn = c4F.name
    c4F.close() 
 
    # Tile 1 - task 1
