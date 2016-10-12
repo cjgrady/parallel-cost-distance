@@ -41,14 +41,15 @@ class MultiTileWqParallelDijkstraLCP(object):
       self.tileSize = tileSize
       self.stepSize = stepSize
       self.summaryFn = summaryFn
+      self.grids = {}
 
    # ...........................
-   def _getGridFilename(self, d, minx, miny, maxx, maxy):
-      return os.path.join(d, "grid%s-%s-%s-%s.asc" % (minx, miny, maxx, maxy))
+   def _getGridFilename(self, d, minx, miny):
+      return os.path.join(d, self.grids["{0},{1}".format(minx, miny)])
    
    # ...........................
-   def _getConnectedTask(self, minx, miny, maxx, maxy, vects, fromSides, tag):
-      inGrid = self._getGridFilename(self.inDir, minx, miny, maxx, maxy)
+   def _getConnectedTask(self, minx, miny, vects, fromSides, tag): # Removed max x and max y
+      inGrid = self._getGridFilename(self.inDir, minx, miny)
       
       if os.path.exists(inGrid):
          task = Task('')
@@ -60,8 +61,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                python=PYTHON_BIN,
                #pycmd='~/git/irksome-broccoli/src/singleTile/parallelDijkstra.py',
                pycmd=getParallelDijkstraModulePath(),
-               inGrid=self._getGridFilename(self.inDir, minx, miny, maxx, maxy),
-               costGrid=self._getGridFilename(self.cDir, minx, miny, maxx, maxy),
+               inGrid=self._getGridFilename(self.inDir, minx, miny),
+               costGrid=self._getGridFilename(self.cDir, minx, miny),
                outputsPath=self.oDir, ss=self.stepSize, ts=self.tileSize,
                taskId=tag, vectsSec=vectsSec, sidesSec=sidesSec)
          task.specify_command(cmd)
@@ -72,17 +73,21 @@ class MultiTileWqParallelDijkstraLCP(object):
          return None
 
    # ...........................
-   def _getKey(self, minx, miny, maxx, maxy):
-      return "{0},{1},{2},{3}".format(minx, miny, maxx, maxy)
+   def _getKey(self, minx, miny):
+      k = "{0},{1}".format(minx, miny)
+      if self.grids.has_key(k):
+         return self.grids[k]
+      else:
+         return None
 
    # ...........................
-   def _getStartupTask(self, minx, miny, maxx, maxy, tag):
+   def _getStartupTask(self, minx, miny, tag):
       task = Task('')
       cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} -e {e}".format(
             python=PYTHON_BIN,
             pycmd=getParallelDijkstraModulePath(),
-            inGrid=self._getGridFilename(self.inDir, minx, miny, maxx, maxy),
-            costGrid=self._getGridFilename(self.cDir, minx, miny, maxx, maxy),
+            inGrid=self._getGridFilename(self.inDir, minx, miny),
+            costGrid=self._getGridFilename(self.cDir, minx, miny),
             ss=self.stepSize, ts=self.tileSize, outputsPath=self.oDir, taskId=tag,
             e=os.path.join(self.oDir, '%s.error' % tag))
       task.specify_command(cmd)
@@ -148,14 +153,13 @@ class MultiTileWqParallelDijkstraLCP(object):
          miny = splitG[1].replace('!', '-')
          maxx = splitG[2].replace('!', '-')
          maxy = splitG[3].replace('!', '-')
-
+         self.grids["{0},{1}".format(minx, miny)] = os.path.basename(g)
+         
          tag = currentTag
          currentTag += 1
-         print minx, miny, maxx, maxy
-         k = self._getKey(minx, miny, maxx, maxy)
+         k = self._getKey(minx, miny)
          if not k in rGrids:
-            task = self._getStartupTask(minx, miny, maxx, maxy, tag)
-            #k = '%s,%s,%s,%s' % (minx, miny, maxx, maxy)
+            task = self._getStartupTask(minx, miny, tag)
             rGrids.append(k)
             print "Added", k, "to running list", tag
          
@@ -176,7 +180,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                minx, miny, maxx, maxy, l, t, r, b, cc = self._readOutputs(task.tag)
                print "Changed", cc, "cells"
                
-               k = self._getKey(minx, miny, maxx, maxy)
+               k = self._getKey(minx, miny)
                print "Removing", k, "from running list", task.tag
                try:
                   rGrids.remove(k)
@@ -185,13 +189,12 @@ class MultiTileWqParallelDijkstraLCP(object):
                   raise
             
                # Add any tasks that were waiting on this tile to finish
-               #tKey = '%s,%s,%s,%s' % (minx, miny, maxx, maxy)
                if waitingGrids.has_key(k):
                   sides = waitingGrids.pop(k)
                   ss,vs = zip(*sides)
                   tag = currentTag
                   currentTag += 1
-                  nTask = self._getConnectedTask(minx, miny, maxx, maxy, vs, ss, tag)
+                  nTask = self._getConnectedTask(minx, miny, vs, ss, tag)
                   if nTask is not None:
                      rGrids.append(k)
                      print "Added", k, "to running list", tag
@@ -201,78 +204,78 @@ class MultiTileWqParallelDijkstraLCP(object):
                if l:
                   vect = self._getVectorFilename(task.tag, 0)
                   
-                  #myKey = '%s,%s,%s,%s' % (minx-self.tileSize, miny, maxx-self.tileSize, maxy)
-                  myKey = self._getKey(minx-self.tileSize, miny, minx, maxy)
-                  if myKey in rGrids:
-                     if not waitingGrids.has_key(myKey):
-                        waitingGrids[myKey] = []
-                     waitingGrids[myKey].append((2, vect))
-                     print "Waiting for:", myKey
-                  else:
-                     print "Submitting for:", myKey
-                     tag = currentTag
-                     currentTag += 1
-                     nTask = self._getConnectedTask(minx-self.tileSize, miny, miny, maxy, [vect], [2], tag)
-                     if nTask is not None:
-                        rGrids.append(myKey)
-                        print "Added", myKey, "to running list", tag
-                        q.submit(nTask)
+                  myKey = self._getKey(minx-self.tileSize, miny)
+                  if myKey is not None:
+                     if myKey in rGrids:
+                        if not waitingGrids.has_key(myKey):
+                           waitingGrids[myKey] = []
+                        waitingGrids[myKey].append((2, vect))
+                        print "Waiting for:", myKey
+                     else:
+                        print "Submitting for:", myKey
+                        tag = currentTag
+                        currentTag += 1
+                        nTask = self._getConnectedTask(minx-self.tileSize, miny, [vect], [2], tag)
+                        if nTask is not None:
+                           rGrids.append(myKey)
+                           print "Added", myKey, "to running list", tag
+                           q.submit(nTask)
                if t:
                   vect = self._getVectorFilename(task.tag, 1)
                   
-                  #myKey = '%s,%s,%s,%s' % (minx, miny+self.tileSize, maxx, maxy+self.tileSize)
-                  myKey = self._getKey(minx, maxy, maxx, maxy+self.tileSize)
-                  if myKey in rGrids:
-                     if not waitingGrids.has_key(myKey):
-                        waitingGrids[myKey] = []
-                     waitingGrids[myKey].append((3, vect))
-                     print "Waiting for:", myKey
-                  else:
-                     print "Submitting for:", myKey
-                     tag = currentTag
-                     currentTag += 1
-                     nTask = self._getConnectedTask(minx, maxy, maxx, maxy+self.tileSize, [vect], [3], tag)
-                     if nTask is not None:
-                        rGrids.append(myKey)
-                        print "Added", myKey, "to running list", tag
-                        q.submit(nTask)
+                  myKey = self._getKey(minx, maxy)
+                  if myKey is not None:
+                     if myKey in rGrids:
+                        if not waitingGrids.has_key(myKey):
+                           waitingGrids[myKey] = []
+                        waitingGrids[myKey].append((3, vect))
+                        print "Waiting for:", myKey
+                     else:
+                        print "Submitting for:", myKey
+                        tag = currentTag
+                        currentTag += 1
+                        nTask = self._getConnectedTask(minx, maxy, [vect], [3], tag)
+                        if nTask is not None:
+                           rGrids.append(myKey)
+                           print "Added", myKey, "to running list", tag
+                           q.submit(nTask)
                if r:
                   vect = self._getVectorFilename(task.tag, 2)
    
-                  #myKey = '%s,%s,%s,%s' % (minx+self.tileSize, miny, maxx+self.tileSize, maxy)
-                  myKey = self._getKey(maxx, miny, maxx+self.tileSize, maxy)
-                  if myKey in rGrids:
-                     if not waitingGrids.has_key(myKey):
-                        waitingGrids[myKey] = []
-                     waitingGrids[myKey].append((0, vect))
-                     print "Waiting for:", myKey
-                  else:
-                     print "Submitting for:", myKey
-                     tag = currentTag
-                     currentTag += 1
-                     nTask = self._getConnectedTask(maxx, miny, maxx+self.tileSize, maxy, [vect], [0], tag)
-                     if nTask is not None:
-                        rGrids.append(myKey)
-                        print "Added", myKey, "to running list", tag
-                        q.submit(nTask)
+                  myKey = self._getKey(maxx, miny)
+                  if myKey is not None:
+                     if myKey in rGrids:
+                        if not waitingGrids.has_key(myKey):
+                           waitingGrids[myKey] = []
+                        waitingGrids[myKey].append((0, vect))
+                        print "Waiting for:", myKey
+                     else:
+                        print "Submitting for:", myKey
+                        tag = currentTag
+                        currentTag += 1
+                        nTask = self._getConnectedTask(maxx, miny, [vect], [0], tag)
+                        if nTask is not None:
+                           rGrids.append(myKey)
+                           print "Added", myKey, "to running list", tag
+                           q.submit(nTask)
                if b:
                   vect = self._getVectorFilename(task.tag, 3)
-                  #myKey = '%s,%s,%s,%s' % (minx, miny-self.tileSize, maxx, maxy-self.tileSize)
-                  myKey = self._getKey(minx, miny-self.tileSize, maxx, miny)
-                  if myKey in rGrids:
-                     if not waitingGrids.has_key(myKey):
-                        waitingGrids[myKey] = []
-                     waitingGrids[myKey].append((1, vect))
-                     print "Waiting for:", myKey
-                  else:
-                     print "Submitting for:", myKey
-                     tag = currentTag
-                     currentTag += 1
-                     nTask = self._getConnectedTask(minx, miny-self.tileSize, maxx, miny, [vect], [1], tag)
-                     if nTask is not None:
-                        rGrids.append(myKey)
-                        print "Added", myKey, "to running list", tag
-                        q.submit(nTask)
+                  myKey = self._getKey(minx, miny-self.tileSize)
+                  if myKey is not None:
+                     if myKey in rGrids:
+                        if not waitingGrids.has_key(myKey):
+                           waitingGrids[myKey] = []
+                        waitingGrids[myKey].append((1, vect))
+                        print "Waiting for:", myKey
+                     else:
+                        print "Submitting for:", myKey
+                        tag = currentTag
+                        currentTag += 1
+                        nTask = self._getConnectedTask(minx, miny-self.tileSize, [vect], [1], tag)
+                        if nTask is not None:
+                           rGrids.append(myKey)
+                           print "Added", myKey, "to running list", tag
+                           q.submit(nTask)
             else:
                print task.id
                print task.command
@@ -308,7 +311,7 @@ class MultiTileWqParallelDijkstraLCP(object):
          w.kill()
       
 # .............................................................................
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
 
    # Read inputs
    parser = argparse.ArgumentParser()
