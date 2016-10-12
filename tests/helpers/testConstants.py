@@ -44,21 +44,28 @@ BELOW_SEA_LEVEL_RASTER = os.path.join(SURFACES_PATH, 'underSL.asc')
 TEST_VECTOR = os.path.join(VECTORS_PATH, 'testVector1.npy')
 
 # Tile directories
-ONE_DEGREE_TILE_DIR = os.path.join(TILES_PATH, 'oneDegree')
-ONE_DEGREE_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'oneDegreeCosts')
+#ONE_DEGREE_TILE_DIR = os.path.join(TILES_PATH, 'oneDegree')
+#ONE_DEGREE_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'oneDegreeCosts')
 
-SIX_DEGREE_TILE_DIR = os.path.join(TILES_PATH, 'sixDegree')
-SIX_DEGREE_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'sixDegreeCosts')
+#SIX_DEGREE_TILE_DIR = os.path.join(TILES_PATH, 'sixDegree')
+#SIX_DEGREE_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'sixDegreeCosts')
 
-SMALLER_TILE_DIR = os.path.join(TILES_PATH, 'smaller')
-SMALLER_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'smallerCosts')
+#SMALLER_TILE_DIR = os.path.join(TILES_PATH, 'smaller')
+#SMALLER_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'smallerCosts')
 
-ONE_TILE_DIR = os.path.join(TILES_PATH, 'oneTile')
-ONE_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'oneTileCosts')
+#ONE_TILE_DIR = os.path.join(TILES_PATH, 'oneTile')
+#ONE_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'oneTileCosts')
 
-TWO_TILE_DIR = os.path.join(TILES_PATH, 'twoTile')
-TWO_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'twoTileCosts')
+#TWO_TILE_DIR = os.path.join(TILES_PATH, 'twoTile')
+#TWO_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'twoTileCosts')
 
-FOUR_TILE_DIR = os.path.join(TILES_PATH, 'fourTile')
-FOUR_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'fourTileCosts')
+#FOUR_TILE_DIR = os.path.join(TILES_PATH, 'fourTile')
+#FOUR_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'fourTileCosts')
+
+EVEN_TILE_DIR = os.path.join(TILES_PATH, 'even2')
+EVEN_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'evenCosts2')
+
+UNEVEN_TILE_DIR = os.path.join(TILES_PATH, 'uneven')
+UNEVEN_TILE_COSTS_DIR = os.path.join(TILES_PATH, 'unevenCosts')
+
 
