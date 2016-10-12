@@ -209,6 +209,7 @@ def test_calculate_large_unevenSteps_16workers():
    print "Cost array shape:", costArray.shape
    print computedArray
    print costArray
+   print np.where(computedArray != costArray)[0]
    assert np.array_equal(computedArray, costArray)
 
 # .............................................................................
@@ -737,6 +738,8 @@ def test_quad_tiles_flow():
    inst5 = SingleTileParallelDijkstraLCP(tile2Fn, cost2Fn, seaLevelRiseCostFn)
    inst5.setMaxWorkers(50)
    inst5.setStepSize(.5)
+   print inst5.cMtx[:,0].tolist()
+   print task1Right.tolist()
    inst5.addSourceVector(task1Right, 0)
    print inst5.sourceCells
    assert len(inst5.sourceCells) == 20
