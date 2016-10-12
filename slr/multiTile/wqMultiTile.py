@@ -304,7 +304,8 @@ class MultiTileWqParallelDijkstraLCP(object):
    def stopWorkers(self):
       for w in self.workers:
          print "Sending kill signal"
-         os.killpg(w.pid, signal.SIGTERM)
+         #os.killpg(w.pid, signal.SIGTERM)
+         w.kill()
       
 # .............................................................................
 if __name__ == "__main__":
