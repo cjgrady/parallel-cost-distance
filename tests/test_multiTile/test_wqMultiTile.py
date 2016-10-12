@@ -22,7 +22,7 @@ from tests.helpers.testConstants import (ONE_DEGREE_TILE_DIR,
                            FOUR_TILE_DIR, FOUR_TILE_COSTS_DIR)
                            
 
-NUM_WORKERS = 2 # Travis core limit
+NUM_WORKERS = 1 # Travis core limit
 
 # .............................................................................
 class TestWqParallelLCP(object):
