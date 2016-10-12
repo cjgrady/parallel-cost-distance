@@ -133,7 +133,7 @@ def test_calculate_large_evenSteps_4workers():
    # Delete temp file
    os.remove(cAryFn)
    
-   assert np.array_equiv(computedArray, costArray)
+   assert np.array_equal(computedArray, costArray)
    
 # .............................................................................
 def test_calculate_large_evenSteps_16workers():
@@ -157,7 +157,7 @@ def test_calculate_large_evenSteps_16workers():
    # Delete temp file
    os.remove(cAryFn)
    
-   assert np.array_equiv(computedArray, costArray)
+   assert np.array_equal(computedArray, costArray)
    
 # .............................................................................
 def test_calculate_large_unevenSteps_4workers():
@@ -181,7 +181,7 @@ def test_calculate_large_unevenSteps_4workers():
    # Delete temp file
    os.remove(cAryFn)
    
-   assert np.array_equiv(computedArray, costArray)
+   assert np.array_equal(computedArray, costArray)
    
 # .............................................................................
 def test_calculate_large_unevenSteps_16workers():
@@ -205,7 +205,11 @@ def test_calculate_large_unevenSteps_16workers():
    # Delete temp file
    os.remove(cAryFn)
    
-   assert np.array_equiv(computedArray, costArray)
+   print "Computed array shape:", computedArray.shape
+   print "Cost array shape:", costArray.shape
+   print computedArray
+   print costArray
+   assert np.array_equal(computedArray, costArray)
 
 # .............................................................................
 def test_check_result_even_steps():
@@ -242,7 +246,7 @@ def test_check_result_even_steps():
    
    print computedArray.tolist()
    print costArray.tolist()
-   assert np.array_equiv(computedArray, costArray)
+   assert np.array_equal(computedArray, costArray)
    
    # Check sides
    outDir = _getTemporaryDirectory(str(randint(0, 999)))
@@ -262,19 +266,19 @@ def test_check_result_even_steps():
 
    # Check top
    costTop = np.array(COST_SURFACE[0], dtype=int)
-   assert np.array_equiv(computedTop, costTop)
+   assert np.array_equal(computedTop, costTop)
    
    # Check bottom
    costBottom = np.array(COST_SURFACE[-1], dtype=int)
-   assert np.array_equiv(computedBottom, costBottom)
+   assert np.array_equal(computedBottom, costBottom)
    
    # Check left
    costLeft = np.array([l[0] for l in COST_SURFACE], dtype=int)
-   assert np.array_equiv(computedLeft, costLeft)
+   assert np.array_equal(computedLeft, costLeft)
    
    # Check right
    costRight = np.array([l[-1] for l in COST_SURFACE], dtype=int)
-   assert np.array_equiv(computedRight, costRight)
+   assert np.array_equal(computedRight, costRight)
    
 # .............................................................................
 def test_check_result_uneven_steps():
@@ -309,7 +313,7 @@ def test_check_result_uneven_steps():
    os.remove(inFn)
    os.remove(outFn)
    
-   assert np.array_equiv(computedArray, costArray)
+   assert np.array_equal(computedArray, costArray)
    
    # Check sides
    outDir = _getTemporaryDirectory(str(randint(0, 999)))
@@ -329,19 +333,19 @@ def test_check_result_uneven_steps():
 
    # Check top
    costTop = np.array(COST_SURFACE[0], dtype=int)
-   assert np.array_equiv(computedTop, costTop)
+   assert np.array_equal(computedTop, costTop)
    
    # Check bottom
    costBottom = np.array(COST_SURFACE[-1], dtype=int)
-   assert np.array_equiv(computedBottom, costBottom)
+   assert np.array_equal(computedBottom, costBottom)
    
    # Check left
    costLeft = np.array([l[0] for l in COST_SURFACE], dtype=int)
-   assert np.array_equiv(computedLeft, costLeft)
+   assert np.array_equal(computedLeft, costLeft)
    
    # Check right
    costRight = np.array([l[-1] for l in COST_SURFACE], dtype=int)
-   assert np.array_equiv(computedRight, costRight)
+   assert np.array_equal(computedRight, costRight)
    
 # .............................................................................
 def test_split_tiles_flow():
@@ -626,6 +630,10 @@ def test_quad_tiles_flow():
    # Check that the fourth tile was written correctly
    inTile4 = np.loadtxt(tile4Fn, comments='', skiprows=6, dtype=int)
    checkTile4 = np.array([[i for i in line[20:]] for line in TEST_SURFACE[20:]], dtype=int)
+   print "In tile 4"
+   print inTile4.tolist()
+   print "Check tile 4"
+   print checkTile4.tolist()
    assert np.array_equal(inTile4, checkTile4)
    
    # Set up cost files
