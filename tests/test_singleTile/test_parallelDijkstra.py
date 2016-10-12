@@ -209,8 +209,8 @@ def test_calculate_large_unevenSteps_16workers():
    print "Cost array shape:", costArray.shape
    print computedArray
    print costArray
-   print np.where(computedArray != costArray)[0]
-   for i in np.where(computedArray != costArray)[0]:
+   print np.where(computedArray != costArray)
+   for i in np.where(computedArray != costArray):
       print computedArray[i], costArray[i]
    assert np.array_equal(computedArray, costArray)
 
@@ -252,7 +252,7 @@ def test_check_result_even_steps():
    assert np.array_equal(computedArray, costArray)
    
    # Check sides
-   outDir = _getTemporaryDirectory(str(randint(0, 999)))
+   outDir = _getTemporaryDirectory(str(randint(0, 99999)))
    
    
    taskId = 'myTest'
@@ -319,7 +319,7 @@ def test_check_result_uneven_steps():
    assert np.array_equal(computedArray, costArray)
    
    # Check sides
-   outDir = _getTemporaryDirectory(str(randint(0, 999)))
+   outDir = _getTemporaryDirectory(str(randint(0, 99999)))
    
    
    taskId = 'myTest'
@@ -380,7 +380,7 @@ def test_split_tiles_flow():
    t2F.close()
 
    # Set up output directory
-   outDir = _getTemporaryDirectory(str(randint(0, 999)))
+   outDir = _getTemporaryDirectory(str(randint(0, 99999)))
 
    # Check that first tile was written correctly
    inTile1 = np.loadtxt(tile1Fn, comments='', skiprows=6, dtype=int)
@@ -568,7 +568,7 @@ def test_quad_tiles_flow():
    t1F.write("ncols   20\n")
    t1F.write("nrows   20\n")
    t1F.write("xllcorner   0\n")
-   t1F.write("yllcorner   0\n")
+   t1F.write("yllcorner   10\n")
    t1F.write("cellsize   0.5\n")
    t1F.write("NODATA_value   -999\n")
    for line in TEST_SURFACE[:20]:
@@ -579,8 +579,8 @@ def test_quad_tiles_flow():
    tile2Fn = t2F.name
    t2F.write("ncols   20\n")
    t2F.write("nrows   20\n")
-   t2F.write("xllcorner   0\n")
-   t2F.write("yllcorner   0\n")
+   t2F.write("xllcorner   10\n")
+   t2F.write("yllcorner   10\n")
    t2F.write("cellsize   0.5\n")
    t2F.write("NODATA_value   -999\n")
    for line in TEST_SURFACE[:20]:
@@ -592,7 +592,7 @@ def test_quad_tiles_flow():
    t3F.write("ncols   20\n")
    t3F.write("nrows   20\n")
    t3F.write("xllcorner   0\n")
-   t3F.write("yllcorner   -10\n")
+   t3F.write("yllcorner   0\n")
    t3F.write("cellsize   0.5\n")
    t3F.write("NODATA_value   -999\n")
    for line in TEST_SURFACE[20:]:
@@ -604,7 +604,7 @@ def test_quad_tiles_flow():
    t4F.write("ncols   20\n")
    t4F.write("nrows   20\n")
    t4F.write("xllcorner   10\n")
-   t4F.write("yllcorner   -10\n")
+   t4F.write("yllcorner   0\n")
    t4F.write("cellsize   0.5\n")
    t4F.write("NODATA_value   -999\n")
    for line in TEST_SURFACE[20:]:
@@ -613,7 +613,7 @@ def test_quad_tiles_flow():
 
 
    # Set up output directory
-   outDir = _getTemporaryDirectory(str(randint(0, 999)))
+   outDir = _getTemporaryDirectory(str(randint(0, 99999)))
 
    # Check that first tile was written correctly
    inTile1 = np.loadtxt(tile1Fn, comments='', skiprows=6, dtype=int)
@@ -766,7 +766,7 @@ def test_quad_tiles_flow():
    inst6.addSourceVector(task1Bottom, 1)
    assert len(inst6.sourceCells) == 20
    inst6.addSourceVector(task4Left, 2)
-   assert len(inst6.sourceCells) == 39 
+   assert len(inst6.sourceCells) == 40 
    inst6.calculate()
    
    task6Id = 'task6'
@@ -774,7 +774,7 @@ def test_quad_tiles_flow():
    assert os.path.exists(os.path.join(outDir, "%s-toTop.npy" % task6Id))
    assert os.path.exists(os.path.join(outDir, "%s-toBottom.npy" % task6Id))
    assert os.path.exists(os.path.join(outDir, "%s-toLeft.npy" % task6Id))
-   assert not os.path.exists(os.path.join(outDir, "%s-toRight.npy" % task6Id))
+   assert os.path.exists(os.path.join(outDir, "%s-toRight.npy" % task6Id))
 
    task6Top = np.load(os.path.join(outDir, "%s-toTop.npy" % task6Id))
    
