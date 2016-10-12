@@ -1,6 +1,6 @@
 #!/bin/sh
 set -ex
-wget http://ccl.cse.nd.edu/software/files/cctools-6.0.4-source.tar.gz
-tar -xzvf cctools-6.0.4-source.tar.gz
-cd cctools-6.0.4-source && ./configure --with-python-path=/usr --with-swig-path=/usr --with-perl-path=/usr && make && sudo make install
+wget http://ccl.cse.nd.edu/software/files/cctools-6.0.5-source.tar.gz
+tar -xzvf cctools-6.0.5-source.tar.gz
+cd cctools-6.0.5-source && ./configure --with-python-path=/usr --with-swig-path=/usr --with-perl-path=/usr && make && sudo make install
 
