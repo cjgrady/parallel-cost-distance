@@ -630,10 +630,6 @@ def test_quad_tiles_flow():
    # Check that the fourth tile was written correctly
    inTile4 = np.loadtxt(tile4Fn, comments='', skiprows=6, dtype=int)
    checkTile4 = np.array([[i for i in line[20:]] for line in TEST_SURFACE[20:]], dtype=int)
-   print "In tile 4"
-   print inTile4.tolist()
-   print "Check tile 4"
-   print checkTile4.tolist()
    assert np.array_equal(inTile4, checkTile4)
    
    # Set up cost files
@@ -669,6 +665,9 @@ def test_quad_tiles_flow():
    assert os.path.exists(os.path.join(outDir, "%s-toBottom.npy" % task1Id))
    assert os.path.exists(os.path.join(outDir, "%s-toLeft.npy" % task1Id))
    assert os.path.exists(os.path.join(outDir, "%s-toRight.npy" % task1Id))
+   # Load vectors we will use later
+   task1Right = np.load(os.path.join(outDir, "%s-toRight.npy" % task1Id))
+   task1Bottom = np.load(os.path.join(outDir, "%s-toBottom.npy" % task1Id))
    
    # Tile 2 - task 2
    #   - no source cells
@@ -728,6 +727,9 @@ def test_quad_tiles_flow():
    assert os.path.exists(os.path.join(outDir, "%s-toBottom.npy" % task4Id))
    assert os.path.exists(os.path.join(outDir, "%s-toLeft.npy" % task4Id))
    assert os.path.exists(os.path.join(outDir, "%s-toRight.npy" % task4Id))
+   # We'll use these later
+   task4Top = np.load(os.path.join(outDir, "%s-toTop.npy" % task4Id))
+   task4Left = np.load(os.path.join(outDir, "%s-toLeft.npy" % task4Id))
    
    # Tile 2 from 1 and 4 - task 5
    #  - some number of source cells
@@ -747,7 +749,10 @@ def test_quad_tiles_flow():
    assert not os.path.exists(os.path.join(outDir, "%s-toBottom.npy" % task5Id))
    assert os.path.exists(os.path.join(outDir, "%s-toLeft.npy" % task5Id))
    assert os.path.exists(os.path.join(outDir, "%s-toRight.npy" % task5Id))
-   
+
+   task5Left = np.load(os.path.join(outDir, "%s-toLeft.npy" % task5Id))
+   task5Bottom = np.load(os.path.join(outDir, "%s-toBottom.npy" % task5Id))
+
    # Tile 3 from 1 and 4 - task 6
    #  - source cells
    #  - vectors
@@ -766,6 +771,8 @@ def test_quad_tiles_flow():
    assert os.path.exists(os.path.join(outDir, "%s-toBottom.npy" % task6Id))
    assert os.path.exists(os.path.join(outDir, "%s-toLeft.npy" % task6Id))
    assert not os.path.exists(os.path.join(outDir, "%s-toRight.npy" % task6Id))
+
+   task6Top = np.load(os.path.join(outDir, "%s-toTop.npy" % task6Id))
    
    # Tile 1 from 2 and 3 - task 7
    #  - source cells
@@ -785,6 +792,7 @@ def test_quad_tiles_flow():
    assert os.path.exists(os.path.join(outDir, "%s-toBottom.npy" % task7Id))
    assert not os.path.exists(os.path.join(outDir, "%s-toLeft.npy" % task7Id))
    assert not os.path.exists(os.path.join(outDir, "%s-toRight.npy" % task7Id))
+   task7Bottom = np.load(os.path.join(outDir, "%s-toBottom.npy" % task7Id))
    
    # Tile 4 from 2 - task 8
    #  - no source cells
