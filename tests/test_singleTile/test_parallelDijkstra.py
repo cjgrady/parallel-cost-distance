@@ -748,7 +748,7 @@ def test_quad_tiles_flow():
    task5Id = 'task5'
    inst5.writeChangedVectors(outDir, ts=10.0, taskId=task5Id)
    assert os.path.exists(os.path.join(outDir, "%s-toTop.npy" % task5Id))
-   assert not os.path.exists(os.path.join(outDir, "%s-toBottom.npy" % task5Id))
+   assert os.path.exists(os.path.join(outDir, "%s-toBottom.npy" % task5Id))
    assert os.path.exists(os.path.join(outDir, "%s-toLeft.npy" % task5Id))
    assert os.path.exists(os.path.join(outDir, "%s-toRight.npy" % task5Id))
 
