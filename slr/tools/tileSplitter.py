@@ -9,7 +9,7 @@ import os
 import re
 
 # .............................................................................
-def writeRaster(grid, xll, yll, cellsize, noData, outDir, ts):
+def _writeRaster(grid, xll, yll, cellsize, noData, outDir, ts, maxX, maxY):
    """
    @summary: Write a raster tile
    @param grid: The data grid
@@ -17,11 +17,12 @@ def writeRaster(grid, xll, yll, cellsize, noData, outDir, ts):
    @param yll: The y value at the lower left corner of the grid
    @param cellsize: The size of each cell
    @param noData: The no data value for the grid
-   @todo: Consider determinign ts from cell size and shape
+   @todo: Consider determining ts from cell size and shape
    @todo: Take dx and dy as option instead of only cellsize
    """
    nrows, ncols = grid.shape
-   fn = os.path.join(outDir, 'grid%s-%s-%s-%s.asc' % (xll, yll, xll+ts, yll+ts))
+   fn = os.path.join(outDir, 'grid%s-%s-%s-%s.asc' % (xll, yll, 
+                                       min(maxX, xll+ts), min(maxY, yll+ts)))
    headers = """\
 ncols   {0}
 nrows   {1}
@@ -30,7 +31,7 @@ yllcorner   {3}
 cellsize   {4}
 NODATA_value   {5}
 """.format(ncols, nrows, xll, yll, cellsize, noData)
-   np.savetxt(fn, grid, comments='', header=headers, dtype=int)
+   np.savetxt(fn, grid, comments='', header=headers, fmt="%i")
 
 # .............................................................................
 def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
@@ -65,19 +66,19 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
             cellsize = float(re.split(r' +', line.replace('\t', ' '))[1])
             dx = dy = cellsize
             numHeaders += 1
-         elif line.lower().startswith('dx'):
+         elif line.lower().startswith('dx'): # pragma: no cover
             dx = float(re.split(r' +', line.replace('\t', ' '))[1])
             numHeaders += 1
-         elif line.lower().startswith('dy'):
+         elif line.lower().startswith('dy'): # pragma: no cover
             dy = float(re.split(r' +', line.replace('\t', ' '))[1])
             numHeaders += 1
          elif line.lower().startswith('nodata_value'):
             noData = float(re.split(r' +', line.replace('\t', ' '))[1])
             numHeaders += 1
-         elif line.lower().startswith('xllce') or line.lower().startswith('yllce'):
+         elif line.lower().startswith('xllce') or line.lower().startswith('yllce'): # pragma: no cover
             #TODO: This will probably fail, need to be able to get lower left corner
             numHeaders += 1
-         else:
+         else: 
             #print line[:40]
             break
    
@@ -85,7 +86,10 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
    xCells = int(ts / dx)
    yCells = int(ts / dy)
    
-   if debug:
+   maxX = xll + ncols*dx
+   maxY = yll + nrows*dy
+   
+   if debug: # pragma: no cover
       print "Num cols:", ncols
       print "Num rows:", nrows
       print "X lower left corner:", xll
@@ -105,30 +109,30 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
    numXsteps = getNumSteps(ncols, xCells, xOffset)
    numYsteps = getNumSteps(nrows, yCells, yOffset)
 
-   if debug:
+   if debug: # pragma: no cover
       print "Number of x steps:", numXsteps, "ncols:", ncols, "xCells:", xCells, "xOffset:", xOffset
       print "Number of y steps:", numYsteps, "nrows:", nrows, "yCells:", yCells, "yOffset:", yOffset
    
    # Split into tiles
    for i in xrange(numXsteps):
       for j in xrange(numYsteps):
-         if debug:
+         if debug: # pragma: no cover
             print "Writing grid", i, j
-         fromY = nrows - ((j+1) * yCells)
+         fromY = max(0, nrows - ((j+1) * yCells))
          toY = nrows - (j * yCells)
          fromX = i * xCells
-         toX = (i+1) * xCells
+         toX = min(ncols, (i+1) * xCells)
          if debug:
             print "[", fromY, ":", toY, ", ", fromX, ":", toX, "]"
          g = grid[fromY:toY, fromX:toX]
          myXll = xll + i * xCells * cellsize
          myYll = yll + j * yCells * cellsize
-         writeRaster(g, myXll, myYll, cellsize, noData, outDir, ts)
+         _writeRaster(g, myXll, myYll, cellsize, noData, outDir, ts, maxX, maxY)
    
    
    
 # .............................................................................
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
    
    parser = argparse.ArgumentParser()
    parser.add_argument('fn', type=str, help="Path to the raster file to split")
