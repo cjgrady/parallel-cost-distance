@@ -597,7 +597,7 @@ def test_quad_tiles_flow():
    t3F.close()
    
    t4F = NamedTemporaryFile(delete=False)
-   tile4Fn = t2F.name
+   tile4Fn = t4F.name
    t4F.write("ncols   20\n")
    t4F.write("nrows   20\n")
    t4F.write("xllcorner   10\n")
