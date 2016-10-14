@@ -80,7 +80,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       
       for k in startChunks.keys():
          minX, minY, maxX, maxY = startChunks[k]['bbox']
-         self.chunks.append((minX, minY, maxX, maxY, startChunks[k]['sourceCells']))
+         self.chunks.append((minX, minY, startChunks[k]['sourceCells']))
       try:
          self.origLeft = np.copy(self.cMtx[:,0])
          self.origRight = np.copy(self.cMtx[:, -1])
@@ -102,7 +102,11 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       
    # ..........................
    def _dijkstraChunk(self, chunk):
-      minx, miny, maxx, maxy, sourceCells = chunk
+      #minx, miny, maxx, maxy, sourceCells = chunk
+      minx, miny, sourceCells = chunk
+      
+      maxx = min(minx+self.step, self.inMtx.shape[1])
+      maxy = min(miny+self.step, self.inMtx.shape[0])
       
       name = '%s-%s-%s-%s' % (minx, miny, maxx, maxy)
       hq = []
@@ -126,11 +130,11 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          if int(cellCost) != int(self.noDataValue):
             if x - 1 >= minx:
                addCell(x-1, y, self.costFn(cost, cellCost, self.inMtx[y][x-1], self.cellSize))
-            if x + 1 <= maxx:
+            if x + 1 < maxx:
                addCell(x+1, y, self.costFn(cost, cellCost, self.inMtx[y][x+1], self.cellSize))
             if y-1 >= miny:
                addCell(x, y-1, self.costFn(cost, cellCost, self.inMtx[y-1][x], self.cellSize))
-            if y+1 <= maxy:
+            if y+1 < maxy:
                addCell(x, y+1, self.costFn(cost, cellCost, self.inMtx[y+1][x], self.cellSize))
 
       # Check to see if source cells inundate anything
@@ -139,11 +143,11 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          cmpy = y
          if x < minx:
             cmpx = minx
-         if x > maxx:
+         if x >= maxx:
             cmpx = maxx
          if y < miny:
             cmpy = miny
-         if y > maxy:
+         if y >= maxy:
             cmpy = maxy
          
          #TODO: This should use the cost function
@@ -196,10 +200,10 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             if x == minx:
                #res.append("Adding a left cell")
                leftCells.append((x, y))
-            if x == maxx:
+            if x == maxx-1:
                #res.append("Adding a right cell")
                rightCells.append((x, y))
-            if y == maxy:
+            if y == maxy-1:
                #res.append("Adding a bottom cell")
                bottomCells.append((x, y))
             if y == miny:
@@ -212,18 +216,18 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       
       if len(leftCells) > 0:
          if minx > 0:
-            self.chunks.append((minx-self.step, miny, minx-1, maxy, leftCells))
+            self.chunks.append((minx-self.step, miny, leftCells))
       if len(rightCells) > 0:
-         if maxx < self.cMtx.shape[1]:
+         if maxx < self.cMtx.shape[1]-1:
             newMaxX = min(self.cMtx.shape[1]-1, maxx + self.step)
-            self.chunks.append((minx+self.step, miny, newMaxX, maxy, rightCells))
+            self.chunks.append((minx+self.step, miny, rightCells))
       if len(topCells) > 0:
          if miny > 0:
-            self.chunks.append((minx, miny-self.step, maxx, miny-1, topCells))
+            self.chunks.append((minx, miny-self.step, topCells))
       if len(bottomCells) > 0:
-         if maxy < self.cMtx.shape[0]:
+         if maxy < self.cMtx.shape[0]-1:
             newMaxY = min(self.cMtx.shape[0]-1, maxy + self.step)
-            self.chunks.append((minx, miny+self.step, maxx, newMaxY, bottomCells))
+            self.chunks.append((minx, miny+self.step, bottomCells))
       #log.debug("Number of chunks: %s" % len(self.chunks))
       #log.debug("Shape: %s, %s" % self.cMtx.shape)
    
