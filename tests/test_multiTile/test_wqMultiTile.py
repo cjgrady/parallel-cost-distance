@@ -155,29 +155,6 @@ COST_SURFACE2 = [
  [ 9,  9,  9,  9,  9,  9,  9,  9,  9,  9,   10, 10, 10, 10, 10,  5,  5,  0,  4,  4]
 ]
 
-#COST_SURFACE2 = [
-# [ 3 ,  7 , 12 , 16 , 16 , 17 , 15 , 11 , 11 , 11 ,   15 , 15 , 13 , 12 ,  8 ,  7 ,  5 ,  5 ,  5 ,  5 ], 
-# [ 6 ,  7 , 13 , 17 , 18 , 18 , 16 , 13 , 11 , 13 ,   16 , 15 , 13 , 12 ,  8 ,  7 ,  5 ,  5 ,  5 ,  5 ], 
-# [ 3 , 11 , 13 , 17 , 18 , 18 , 16 , 11 , 11 , 13 ,   16 , 15 , 13 , 12 , 10 ,  7 ,  6 ,  6 ,  6 ,  5 ], 
-# [ 3 ,  4 , 14 , 15 , 16 , 16 , 15 , 10 , 11 , 15 ,   15 , 14 , 19 , 11 , 11 ,  9 ,  6 ,  7 ,  6 ,  5 ], 
-# [ 3 ,  6 , 12 , 13 , 11 , 11 ,  9 ,  5 ,  6 ,  8 ,   11 , 16 , 22 , 16 , 14 , 10 ,  6 ,  6 ,  6 ,  5 ], 
-# [ 2 ,  8 ,  8 , 13 ,  9 ,  9 ,  5 ,  6 ,  8 ,  8 ,   16 , 15 , 16 , 15 , 15 ,  7 ,  7 ,  7 ,  7 ,  7 ], 
-# [ 5 , 11 , 10 ,  9 ,  7 ,  4 ,  5 ,  4 ,  5 ,  7 ,   15 , 17 , 17 , 15 , 12 ,  7 ,  7 ,  7 ,  7 ,  7 ], 
-# [ 7 , 11 , 13 , 13 , 11 ,  7 ,  4 ,  4 ,  5 , 12 ,   14 , 16 , 18 , 13 , 13 , 12 ,  9 ,  7 ,  7 ,  7 ], 
-# [ 8 , 10 , 11 , 12 , 10 ,  5 ,  7 ,  4 ,  4 , 11 ,   13 , 18 , 16 , 18 , 16 , 14 , 10 , 11 , 10 , 10 ], 
-# [ 9 , 11 , 11 , 11 ,  9 ,  3 ,  3 ,  8 ,  0 ,  7 ,    9 , 11 , 16 , 16 , 16 , 14 ,  9 , 10 , 11 , 11 ], 
-# 
-# [ 9 , 11 , 11 , 11 ,  9 ,  3 ,  8 , 10 ,  3 ,  6 ,   10 , 11 , 13 , 15 , 17 , 15 , 10 , 11 , 11 , 12 ], 
-# [ 9 , 11 , 12 , 11 ,  9 ,  3 ,  3 ,  3 ,  3 ,  9 ,   10 , 11 , 13 , 15 , 14 , 13 ,  8 ,  8 ,  9 , 10 ], 
-# [ 9 , 11 , 11 , 11 ,  9 ,  3 ,  3 ,  3 ,  9 ,  9 ,    8 , 11 , 16 , 15 , 14 , 13 ,  8 ,  9 , 10 , 10 ], 
-# [ 9 , 11 , 11 , 12 , 10 ,  4 ,  4 ,  4 ,  8 , 10 ,    9 , 12 , 16 , 16 , 14 , 13 ,  8 ,  9 , 10 , 11 ], 
-# [ 8 , 11 , 12 , 11 ,  9 ,  4 ,  8 ,  8 ,  9 , 14 ,   13 , 10 , 14 , 14 , 15 , 14 ,  8 ,  9 , 10 , 10 ], 
-# [ 8 , 12 , 12 , 12 ,  9 ,  9 ,  9 ,  9 , 10 , 14 ,   13 , 17 , 15 , 15 , 13 , 11 ,  7 ,  7 ,  7 ,  8 ], 
-# [ 8 , 11 , 12 , 11 ,  8 ,  9 ,  9 , 11 , 12 , 16 ,   13 , 14 , 14 , 14 , 13 , 11 ,  6 ,  6 ,  6 ,  7 ], 
-# [ 4 ,  9 , 10 , 10 ,  9 ,  9 , 10 , 12 , 15 , 17 ,   13 , 13 , 14 , 13 , 12 , 10 ,  5 ,  5 ,  6 ,  6 ], 
-# [ 4 ,  7 ,  8 ,  7 ,  4 ,  8 ,  8 , 10 , 11 , 10 ,   10 , 12 , 10 , 12 , 10 ,  5 ,  5 ,  4 ,  5 ,  5 ], 
-# [ 4 ,  4 ,  4 ,  4 ,  4 ,  8 ,  8 ,  8 ,  9 ,  8 ,   10 , 10 ,  7 ,  8 , 10 ,  5 ,  5 ,  0 ,  4 ,  4 ]
-#]
 
 # .............................................................................
 class TestWqParallelLCP(object):
@@ -189,8 +166,8 @@ class TestWqParallelLCP(object):
       """
       @summary: Set up the test
       """
-      self.cDir = self._getTemporaryDirectory(randint(0, 10000))
-      self.oDir = self._getTemporaryDirectory(randint(0, 10000))
+      self.cDir = self._getTemporaryDirectory(randint(0, 100000))
+      self.oDir = self._getTemporaryDirectory(randint(0, 100000))
       # We just want a name, so let it be deleted
       tf = tempfile.NamedTemporaryFile(delete=True)
       self.summaryFn = tf.name
@@ -288,7 +265,6 @@ class TestWqParallelLCP(object):
    #   @summary: Test that the outputs are what we expect when using uneven tile
    #                sizes
    #   """
-   #   assert False
    #   # Create instance
    #   myInstance = MultiTileWqParallelDijkstraLCP(UNEVEN_TILE_DIR, 
    #                        self.cDir, self.oDir, 20.0, .2, 
@@ -452,11 +428,11 @@ class TestWqParallelLCP(object):
       t1Fn = os.path.join(inDir, 'grid0.0-10.0-10.0-20.0.asc')
       t2Fn = os.path.join(inDir, 'grid10.0-10.0-20.0-20.0.asc')
       t3Fn = os.path.join(inDir, 'grid0.0-0.0-10.0-10.0.asc')
-      t4Fn = os.path.join(inDir, 'grid10.0-0.0-10.0-10.0.asc')
+      t4Fn = os.path.join(inDir, 'grid10.0-0.0-20.0-10.0.asc')
       c1Fn = os.path.join(realCostsDir, 'grid0.0-10.0-10.0-20.0.asc')
       c2Fn = os.path.join(realCostsDir, 'grid10.0-10.0-20.0-20.0.asc')
       c3Fn = os.path.join(realCostsDir, 'grid0.0-0.0-10.0-10.0.asc')
-      c4Fn = os.path.join(realCostsDir, 'grid10.0-0.0-10.0-10.0.asc')
+      c4Fn = os.path.join(realCostsDir, 'grid10.0-0.0-20.0-10.0.asc')
       
       
       # Write out tiles

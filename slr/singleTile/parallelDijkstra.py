@@ -109,6 +109,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       maxy = min(miny+self.step, self.inMtx.shape[0])
       
       name = '%s-%s-%s-%s' % (minx, miny, maxx, maxy)
+      print name
       hq = []
       
       leftCells = []
@@ -219,14 +220,12 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             self.chunks.append((minx-self.step, miny, leftCells))
       if len(rightCells) > 0:
          if maxx < self.cMtx.shape[1]-1:
-            newMaxX = min(self.cMtx.shape[1]-1, maxx + self.step)
             self.chunks.append((minx+self.step, miny, rightCells))
       if len(topCells) > 0:
          if miny > 0:
             self.chunks.append((minx, miny-self.step, topCells))
       if len(bottomCells) > 0:
          if maxy < self.cMtx.shape[0]-1:
-            newMaxY = min(self.cMtx.shape[0]-1, maxy + self.step)
             self.chunks.append((minx, miny+self.step, bottomCells))
       #log.debug("Number of chunks: %s" % len(self.chunks))
       #log.debug("Shape: %s, %s" % self.cMtx.shape)
