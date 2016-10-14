@@ -105,11 +105,12 @@ NODATA_value   {5}
 if __name__ == "__main__":
    #s = SurfaceGenerator(20, 20, 10, 10, 10, defVal=0)
    #s = SurfaceGenerator(1000, 1000, 0, 0, 0.05, defVal=0)
-   s = SurfaceGenerator(1000, 1000, 0, 0, 0.05, defVal=0)
+   s = SurfaceGenerator(20, 20, 0, 0, 1.0, defVal=0)
    #s.addEllipsoid(5, 5, 4, 3, 10)
    #s.addEllipsoid(7, 7, 2, 5, 10)
    #s.addCone(14, 14, 5, 20)
    #s.writeGrid('/home/cjgrady/testSurface.asc')
-   s.addRandom(numCones=500, numEllipsoids=500, maxHeight=60, maxRad=80)
-   s.writeGrid('/home/cjgrady/git/irksome-broccoli/testData/surfaces/testSurface.asc')
+   s.addRandom(numCones=10, numEllipsoids=10, maxHeight=10, maxRad=10)
+   #s.writeGrid('/home/cjgrady/git/irksome-broccoli/testData/surfaces/testSurface.asc')
+   print s.grid.tolist()
    
