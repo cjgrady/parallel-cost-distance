@@ -49,13 +49,13 @@ class SingleTileLCP(object):
                             top, 2: right, 3: bottom)
       """
       if originSide == 0:
-         inVect = self.inMtx[0,:]
-         costVect = self.cMtx[0,:]
+         inVect = self.inMtx[:,0]
+         costVect = self.cMtx[:,0]
          cmpVect = self._squishStretchVector(vect, len(inVect))
          getSourceCoords = lambda j: (0, j)
       elif originSide == 1:
-         inVect = self.inMtx[:,0]
-         costVect = self.cMtx[:,0]
+         inVect = self.inMtx[0,:]
+         costVect = self.cMtx[0,:]
          cmpVect = self._squishStretchVector(vect, len(inVect))
          getSourceCoords = lambda j: (j, 0)
       elif originSide == 2:
