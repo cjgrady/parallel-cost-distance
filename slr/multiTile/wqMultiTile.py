@@ -195,6 +195,9 @@ class MultiTileWqParallelDijkstraLCP(object):
                   ss,vs = zip(*sides)
                   tag = currentTag
                   currentTag += 1
+                  print minx, miny
+                  print vs
+                  print ss
                   nTask = self._getConnectedTask(minx, miny, vs, ss, tag)
                   if nTask is not None:
                      rGrids.append(k)
