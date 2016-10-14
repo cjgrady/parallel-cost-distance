@@ -4,6 +4,7 @@
 """
 import argparse
 import glob
+import numpy as np
 import os
 import signal
 import sys
@@ -203,6 +204,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                # Add adjacent tiles as necessary
                if l:
                   vect = self._getVectorFilename(task.tag, 0)
+                  print "Left:", minx, miny
+                  print np.load(vect).tolist()
                   
                   myKey = self._getKey(minx-self.tileSize, miny)
                   if myKey is not None:
@@ -222,6 +225,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                            q.submit(nTask)
                if t:
                   vect = self._getVectorFilename(task.tag, 1)
+                  print "Top:", minx, miny
+                  print np.load(vect).tolist()
                   
                   myKey = self._getKey(minx, maxy)
                   if myKey is not None:
@@ -241,6 +246,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                            q.submit(nTask)
                if r:
                   vect = self._getVectorFilename(task.tag, 2)
+                  print "Right:", minx, miny
+                  print np.load(vect).tolist()
    
                   myKey = self._getKey(maxx, miny)
                   if myKey is not None:
@@ -260,6 +267,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                            q.submit(nTask)
                if b:
                   vect = self._getVectorFilename(task.tag, 3)
+                  print "Bottom:", minx, miny
+                  print np.load(vect).tolist()
                   myKey = self._getKey(minx, miny-self.tileSize)
                   if myKey is not None:
                      if myKey in rGrids:
