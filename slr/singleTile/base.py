@@ -78,6 +78,9 @@ class SingleTileLCP(object):
          # TODO: Evaluate this and if we are doing things correctly
          c = max(inVect[i], cmpVect[i])
          if int(costVect[i]) == int(self.noDataValue) or costVect[i] > c:
+            # Experimental change
+            x,y = getSourceCoords(i)
+            self.cMtx[y,x] = c
             costVect[i] = c
             self.sourceCells.append(getSourceCoords(i))
 
