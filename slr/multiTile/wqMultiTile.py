@@ -59,9 +59,10 @@ class MultiTileWqParallelDijkstraLCP(object):
          sidesSec = ' '.join(['-s %s' % s for s in fromSides])
          
          print "Submitting task for grid:", minx, miny
-         print "Current status:"
-         m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
-         print m.tolist()
+         if os.path.exists(self._getGridFilename(self.cDir, minx, miny)):
+            print "Current status:"
+            m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
+            print m.tolist()
          
          cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {vectsSec} {sidesSec}".format(
                python=PYTHON_BIN,
