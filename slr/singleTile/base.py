@@ -38,6 +38,7 @@ class SingleTileLCP(object):
       self.noDataValue = -9999
       
       self._initialize()
+      self.extras = []
    
    # ..........................
    def addSourceVector(self, vect, originSide):
@@ -53,21 +54,37 @@ class SingleTileLCP(object):
          costVect = self.cMtx[:,0]
          cmpVect = self._squishStretchVector(vect, len(inVect))
          getSourceCoords = lambda j: (0, j)
+         self.extras.append("Origin side: 0")
+         self.extras.append("In vector [:,0] - %s" % str(inVect.tolist()))
+         self.extras.append("Cost vector [:,0] - %s" % str(costVect.tolist()))
+         self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
       elif originSide == 1:
          inVect = self.inMtx[0,:]
          costVect = self.cMtx[0,:]
          cmpVect = self._squishStretchVector(vect, len(inVect))
          getSourceCoords = lambda j: (j, 0)
+         self.extras.append("Origin side: 1")
+         self.extras.append("In vector [0,:] - %s" % str(inVect.tolist()))
+         self.extras.append("Cost vector [0,:] - %s" % str(costVect.tolist()))
+         self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
       elif originSide == 2:
-         inVect = self.inMtx[:,self.cMtx.shape[1]-1]
-         costVect = self.cMtx[:,self.cMtx.shape[1]-1]
+         inVect = self.inMtx[:,-1]
+         costVect = self.cMtx[:,-1]
          cmpVect = self._squishStretchVector(vect, len(inVect))
          getSourceCoords = lambda j: (self.cMtx.shape[1]-1, j)
+         self.extras.append("Origin side: 2")
+         self.extras.append("In vector [:,-1] - %s" % str(inVect.tolist()))
+         self.extras.append("Cost vector [:,-1] - %s" % str(costVect.tolist()))
+         self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
       elif originSide == 3:
-         inVect = self.inMtx[self.cMtx.shape[0] -1,:]
-         costVect = self.cMtx[self.cMtx.shape[0] -1,:]
+         inVect = self.inMtx[-1,:]
+         costVect = self.cMtx[-1,:]
          cmpVect = self._squishStretchVector(vect, len(inVect))
          getSourceCoords = lambda j: (j, self.cMtx.shape[0] - 1)
+         self.extras.append("Origin side: 3")
+         self.extras.append("In vector [-1,:] - %s" % str(inVect.tolist()))
+         self.extras.append("Cost vector [-1,:] - %s" % str(costVect.tolist()))
+         self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
       else:
          raise Exception, "Cannot add source vector for side: %s" % originSide 
 
