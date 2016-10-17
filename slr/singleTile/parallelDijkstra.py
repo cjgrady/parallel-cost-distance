@@ -295,6 +295,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          outF.write("%s\n" % b) # Bottom modified
          outF.write("%s\n" % self.cellsChanged)
          outF.write("%s\n" % dTime)
+         outF.write("%s\n" % ','.join(["(%s, %s)" % (x, y) for x, y in self.sourceCells]))
       
 # .............................................................................
 if __name__ == "__main__": # pragma: no cover
