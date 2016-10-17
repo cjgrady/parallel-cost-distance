@@ -184,13 +184,13 @@ class MultiTileWqParallelDijkstraLCP(object):
             print "Task id:", task.id
             print "Task tag:", task.tag
             
-            print "Calculated result:"
-            m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
-            print m.tolist()
-
             if os.path.exists(self._getSummaryFile(task.tag)):
                minx, miny, maxx, maxy, l, t, r, b, cc = self._readOutputs(task.tag)
                print "Changed", cc, "cells"
+               
+               print "Calculated result"
+               m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
+               print m.tolist()
                
                k = self._getKey(minx, miny)
                print "Removing", k, "from running list", task.tag
