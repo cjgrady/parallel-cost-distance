@@ -175,10 +175,6 @@ class MultiTileWqParallelDijkstraLCP(object):
    
       r = 0
       while not q.empty() and r < 1000:
-         print "Calculated result"
-         m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
-         print m.tolist()
-
          # Wait a maximum of 10 seconds for a task to come back.
          task = q.wait(1)
          r += 1
