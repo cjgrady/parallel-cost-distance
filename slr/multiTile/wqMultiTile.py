@@ -58,6 +58,11 @@ class MultiTileWqParallelDijkstraLCP(object):
          vectsSec = ' '.join(['-v %s' % v for v in vects])
          sidesSec = ' '.join(['-s %s' % s for s in fromSides])
          
+         print "Submitting task for grid:", minx, miny
+         print "Current status:"
+         m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
+         print m.tolist()
+         
          cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {vectsSec} {sidesSec}".format(
                python=PYTHON_BIN,
                #pycmd='~/git/irksome-broccoli/src/singleTile/parallelDijkstra.py',
@@ -69,6 +74,7 @@ class MultiTileWqParallelDijkstraLCP(object):
          task.specify_command(cmd)
          task.specify_output_file(self._getSummaryFile(tag))
          task.specify_tag(str(tag))
+         
          return task
       else:
          return None
@@ -169,6 +175,10 @@ class MultiTileWqParallelDijkstraLCP(object):
    
       r = 0
       while not q.empty() and r < 1000:
+         print "Calculated result"
+         m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
+         print m.tolist()
+
          # Wait a maximum of 10 seconds for a task to come back.
          task = q.wait(1)
          r += 1
@@ -177,7 +187,11 @@ class MultiTileWqParallelDijkstraLCP(object):
             print "Task id:", task.id
             print "Task tag:", task.tag
             
-            if os.path.exists(self._getSummaryFile(task.tag)):
+            print "Calculated result:"
+            m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
+            print m.tolist()
+
+         if os.path.exists(self._getSummaryFile(task.tag)):
                minx, miny, maxx, maxy, l, t, r, b, cc = self._readOutputs(task.tag)
                print "Changed", cc, "cells"
                
