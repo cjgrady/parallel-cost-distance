@@ -212,7 +212,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                      assert len(waitingGrids[k]) < l 
                      # Check that pop is modifying dictionary
                   else:
-                     tmp = waitingGrids.pop(k)
+                     tmp = waitingGrids.pop(k)[0]
                   print tmp
                   ss, vs = tmp
                   #sides = waitingGrids.pop(k)
