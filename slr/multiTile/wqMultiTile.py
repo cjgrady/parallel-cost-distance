@@ -205,16 +205,15 @@ class MultiTileWqParallelDijkstraLCP(object):
             
                # Add any tasks that were waiting on this tile to finish
                if waitingGrids.has_key(k):
-			   
-			      # Having issues with Travis so only working on one side at a time
-				  if len(waitingGrids[k]) > 1:
-				     l = len(waitingGrids[k])
-				     tmp = waitingGrids[k].pop(0)
-			         assert len(waitingGrids[k]) < l 
-					 # Check that pop is modifying dictionary
-				  else:
-				     tmp = waitingGrids.pop(k)
-			      ss, vs = tmp
+                  # Having issues with Travis so only working on one side at a time
+                  if len(waitingGrids[k]) > 1:
+                     l = len(waitingGrids[k])
+                     tmp = waitingGrids[k].pop(0)
+                     assert len(waitingGrids[k]) < l 
+                     # Check that pop is modifying dictionary
+                  else:
+                     tmp = waitingGrids.pop(k)
+                  ss, vs = tmp
                   #sides = waitingGrids.pop(k)
                   #print "Sides:", sides
                   #ss,vs = zip(*sides)
