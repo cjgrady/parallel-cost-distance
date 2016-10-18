@@ -189,6 +189,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                
             if os.path.exists(self._getSummaryFile(task.tag)):
                minx, miny, maxx, maxy, l, t, r, b, cc = self._readOutputs(task.tag)
+               print minx, miny, maxx, maxy, l, t, r, b, cc
                print "Changed", cc, "cells"
                
                print "Calculated result"
