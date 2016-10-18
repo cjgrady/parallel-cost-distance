@@ -213,6 +213,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                      # Check that pop is modifying dictionary
                   else:
                      tmp = waitingGrids.pop(k)
+                  print tmp
                   ss, vs = tmp
                   #sides = waitingGrids.pop(k)
                   #print "Sides:", sides
