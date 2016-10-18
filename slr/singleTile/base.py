@@ -176,7 +176,7 @@ class SingleTileLCP(object):
          
          self.headers = ''.join(hs)
          
-         self.inMtx = numpy.loadtxt(self.inFn, skiprows=numHeaders)
+         self.inMtx = numpy.loadtxt(self.inFn, skiprows=numHeaders, dtype=int)
          
       else:
          raise IOError, "Input grid does not exist: %s" % self.inFn
