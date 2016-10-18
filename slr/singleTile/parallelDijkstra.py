@@ -334,7 +334,7 @@ if __name__ == "__main__": # pragma: no cover
          for sVect, fromDir in zip(args.vect, args.fromSide):
             tile.addDebug("Source vector: %s" % str(sVect))
             tile.addDebug("From dir: %s" % str(fromDir))
-            sourceVector = np.load(sVect, dtype=int)
+            sourceVector = np.load(sVect)
             tile.addSourceVector(sourceVector, fromDir)
       
       if args.w is not None:
