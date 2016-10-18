@@ -60,9 +60,7 @@ class MultiTileWqParallelDijkstraLCP(object):
          
          print "Submitting task for grid:", minx, miny
          if os.path.exists(self._getGridFilename(self.cDir, minx, miny)):
-            print "Current status:"
             m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
-            print m.tolist()
          
          cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {vectsSec} {sidesSec} -e {e}".format(
                python=PYTHON_BIN,
@@ -117,7 +115,6 @@ class MultiTileWqParallelDijkstraLCP(object):
    
    # ...........................
    def _readOutputs(self, taskId):
-      #TODO: I changed this from task.tag that could not exist
       cnt = open(self._getSummaryFile(taskId)).readlines()
       print cnt
       minx = float(cnt[0])
@@ -208,17 +205,24 @@ class MultiTileWqParallelDijkstraLCP(object):
             
                # Add any tasks that were waiting on this tile to finish
                if waitingGrids.has_key(k):
-                  sides = waitingGrids.pop(k)
-                  print "Sides:", sides
-                  ss,vs = zip(*sides)
-                  print ss
-                  print vs
+			   
+			      # Having issues with Travis so only working on one side at a time
+				  if len(waitingGrids[k]) > 1:
+				     l = len(waitingGrids[k])
+				     tmp = waitingGrids[k].pop(0)
+			         assert len(waitingGrids[k]) < l # Check that pop is modifying dictionary
+				  else:
+				     tmp = waitingGrids.pop(k)
+			      ss, vs = tmp
+                  #sides = waitingGrids.pop(k)
+                  #print "Sides:", sides
+                  #ss,vs = zip(*sides)
                   tag = currentTag
                   currentTag += 1
                   print minx, miny
                   print vs
                   print ss
-                  nTask = self._getConnectedTask(minx, miny, vs, ss, tag)
+                  nTask = self._getConnectedTask(minx, miny, [vs], [ss], tag)
                   if nTask is not None:
                      rGrids.append(k)
                      print "Added", k, "to running list", tag
