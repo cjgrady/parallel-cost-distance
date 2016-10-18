@@ -26,7 +26,10 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
    maxWorkers = 8
    chunks = []
    cellsChanged = 0
-   
+
+   def addDebug(self, txt):
+      self.extras.append(txt)
+      
    # ..........................
    def setStepSize(self, step):
       """
@@ -326,8 +329,12 @@ if __name__ == "__main__": # pragma: no cover
       if args.fromSide is None or args.vect is None or len(args.fromSide) == 0 or len(args.vect) == 0:
          tile.findSourceCells()
       else:
+         tile.addDebug(args.vect)
+         tile.addDebug(args.fromSide)
          for sVect, fromDir in zip(args.vect, args.fromSide):
-            sourceVector = np.load(sVect)
+            tile.addDebug("Source vector: %s" % sVect)
+            tile.addDebug("From dir: %s" % fromDir)
+            sourceVector = np.load(sVect, dtype=int)
             tile.addSourceVector(sourceVector, fromDir)
       
       if args.w is not None:
