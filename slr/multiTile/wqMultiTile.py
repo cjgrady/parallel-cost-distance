@@ -64,14 +64,15 @@ class MultiTileWqParallelDijkstraLCP(object):
             m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
             print m.tolist()
          
-         cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {vectsSec} {sidesSec}".format(
+         cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {vectsSec} {sidesSec} -e {e}".format(
                python=PYTHON_BIN,
                #pycmd='~/git/irksome-broccoli/src/singleTile/parallelDijkstra.py',
                pycmd=getParallelDijkstraModulePath(),
                inGrid=self._getGridFilename(self.inDir, minx, miny),
                costGrid=self._getGridFilename(self.cDir, minx, miny),
                outputsPath=self.oDir, ss=self.stepSize, ts=self.tileSize,
-               taskId=tag, vectsSec=vectsSec, sidesSec=sidesSec)
+               taskId=tag, vectsSec=vectsSec, sidesSec=sidesSec,
+               e=os.path.join(self.oDir, '%s.error' % tag))
          print "Submitting:"
          print cmd
          task.specify_command(cmd)
@@ -186,6 +187,9 @@ class MultiTileWqParallelDijkstraLCP(object):
             print "Task id:", task.id
             print "Task tag:", task.tag
             
+            if os.path.exists(os.path.join(self.oDir, '%s.error' % task.tag)):
+               print open(os.path.join(self.oDir, '%s.error' % task.tag)).read()
+               
             if os.path.exists(self._getSummaryFile(task.tag)):
                minx, miny, maxx, maxy, l, t, r, b, cc = self._readOutputs(task.tag)
                print "Changed", cc, "cells"
