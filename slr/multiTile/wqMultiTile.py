@@ -72,6 +72,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                costGrid=self._getGridFilename(self.cDir, minx, miny),
                outputsPath=self.oDir, ss=self.stepSize, ts=self.tileSize,
                taskId=tag, vectsSec=vectsSec, sidesSec=sidesSec)
+         print "Submitting:"
+         print cmd
          task.specify_command(cmd)
          task.specify_output_file(self._getSummaryFile(tag))
          task.specify_tag(str(tag))
@@ -203,7 +205,10 @@ class MultiTileWqParallelDijkstraLCP(object):
                # Add any tasks that were waiting on this tile to finish
                if waitingGrids.has_key(k):
                   sides = waitingGrids.pop(k)
+                  print "Sides:", sides
                   ss,vs = zip(*sides)
+                  print ss
+                  print vs
                   tag = currentTag
                   currentTag += 1
                   print minx, miny
