@@ -7,3 +7,5 @@ __pycache__/
 .pydevproject
 
 xlarge*.asc
+
+*.asc.aux.xml
