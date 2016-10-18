@@ -208,9 +208,9 @@ class MultiTileWqParallelDijkstraLCP(object):
                if waitingGrids.has_key(k):
                   # Having issues with Travis so only working on one side at a time
                   if len(waitingGrids[k]) > 1:
-                     l = len(waitingGrids[k])
+                     lngth = len(waitingGrids[k])
                      tmp = waitingGrids[k].pop(0)
-                     assert len(waitingGrids[k]) < l 
+                     assert len(waitingGrids[k]) < lngth 
                      # Check that pop is modifying dictionary
                   else:
                      tmp = waitingGrids.pop(k)[0]
