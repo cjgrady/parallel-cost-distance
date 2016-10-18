@@ -329,11 +329,11 @@ if __name__ == "__main__": # pragma: no cover
       if args.fromSide is None or args.vect is None or len(args.fromSide) == 0 or len(args.vect) == 0:
          tile.findSourceCells()
       else:
-         tile.addDebug(args.vect)
-         tile.addDebug(args.fromSide)
+         tile.addDebug(str(args.vect))
+         tile.addDebug(str(args.fromSide))
          for sVect, fromDir in zip(args.vect, args.fromSide):
-            tile.addDebug("Source vector: %s" % sVect)
-            tile.addDebug("From dir: %s" % fromDir)
+            tile.addDebug("Source vector: %s" % str(sVect))
+            tile.addDebug("From dir: %s" % str(fromDir))
             sourceVector = np.load(sVect, dtype=int)
             tile.addSourceVector(sourceVector, fromDir)
       
