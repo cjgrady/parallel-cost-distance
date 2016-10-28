@@ -112,7 +112,6 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       maxy = min(miny+self.step, self.inMtx.shape[0])
       
       name = '%s-%s-%s-%s' % (minx, miny, maxx, maxy)
-      print name
       hq = []
       
       leftCells = []

@@ -192,10 +192,6 @@ class MultiTileWqParallelDijkstraLCP(object):
                print minx, miny, maxx, maxy, l, t, r, b, cc
                print "Changed", cc, "cells"
                
-               print "Calculated result"
-               m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
-               print m.tolist()
-               
                k = self._getKey(minx, miny)
                print "Removing", k, "from running list", task.tag
                try:

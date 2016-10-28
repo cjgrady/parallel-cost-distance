@@ -51,9 +51,6 @@ class SingleTileSerialDijkstraLCP(SingleTileLCP):
             c = self.inMtx[y][x]
          else:
             c = self.cMtx[y][x]
-         print "Adding source cell:", x, y, c
-         print self.inMtx[y][x]
-         print self.cMtx[y][x]
          addNeighbors(x, y, c)
             
       while len(hq) > 0:
