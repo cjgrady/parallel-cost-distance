@@ -175,10 +175,13 @@ class TestCostDistance(object):
          a1 = np.loadtxt(fn, comments='', skiprows=6, dtype=int)
          a2 = np.loadtxt(os.path.join(dir2, n), comments='', skiprows=6, dtype=int)
          if not np.array_equal(a1, a2):
-            print n, "not equal"
-            print a1.tolist()
-            print
-            print a2.tolist()
+            #print n, "not equal"
+            #print a1.tolist()
+            #print
+            #print a2.tolist()
+            print np.where(a1 != a2)
+            ys, xs = np.where(a1 != a2)
+            print a1[ys[0],xs[0]], a2[ys[0],xs[0]]
             return False
       return True
    
@@ -201,14 +204,17 @@ class TestCostDistance(object):
             if x < maxx-1:
                cmpCells.append(costGrid[y,x+1])
             
+            t1 = False
             if inGrid[y,x] == 0:
                t1 = costGrid[y,x] == 0
                if not t1:
                   print "(%s,%s) should have been source cell" % (x, y)
                assert t1
             
-            tVal = max(inGrid[y,x], min(cmpCells))
-            t2 = costGrid[y,x] == tVal
-            if not t2:
-               print "(%s,%s) should have been %s, instead it is %s" % (x, y, tVal, costGrid[y,x])
-            assert t2
+            # Only if it wasn't a source cell
+            if not t1:
+               tVal = max(inGrid[y,x], min(cmpCells))
+               t2 = costGrid[y,x] == tVal
+               if not t2:
+                  print "(%s,%s) should have been %s, instead it is %s" % (x, y, tVal, costGrid[y,x])
+               assert t2

@@ -107,6 +107,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
    def _dijkstraChunk(self, chunk):
       #minx, miny, maxx, maxy, sourceCells = chunk
       minx, miny, sourceCells = chunk
+      print "Working on chunk:", chunk
       
       maxx = min(minx+self.step, self.inMtx.shape[1])
       maxy = min(miny+self.step, self.inMtx.shape[0])
@@ -124,21 +125,21 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          """
          @summary: Add a cell to the heap if appropriate
          """
-         if int(self.cMtx[y][x]) == int(self.noDataValue) or self.cMtx[y][x] > cost:
+         if int(self.cMtx[y,x]) == int(self.noDataValue) or self.cMtx[y,x] > cost:
             heapq.heappush(hq, (cost, x, y))
    
       # ........................
       def addNeighbors(x, y, cost):
-         cellCost = self.inMtx[y][x]
+         cellCost = self.inMtx[y,x]
          if int(cellCost) != int(self.noDataValue):
             if x - 1 >= minx:
-               addCell(x-1, y, self.costFn(cost, cellCost, self.inMtx[y][x-1], self.cellSize))
+               addCell(x-1, y, self.costFn(cost, cellCost, self.inMtx[y,x-1], self.cellSize))
             if x + 1 < maxx:
-               addCell(x+1, y, self.costFn(cost, cellCost, self.inMtx[y][x+1], self.cellSize))
+               addCell(x+1, y, self.costFn(cost, cellCost, self.inMtx[y,x+1], self.cellSize))
             if y-1 >= miny:
-               addCell(x, y-1, self.costFn(cost, cellCost, self.inMtx[y-1][x], self.cellSize))
+               addCell(x, y-1, self.costFn(cost, cellCost, self.inMtx[y-1,x], self.cellSize))
             if y+1 < maxy:
-               addCell(x, y+1, self.costFn(cost, cellCost, self.inMtx[y+1][x], self.cellSize))
+               addCell(x, y+1, self.costFn(cost, cellCost, self.inMtx[y+1,x], self.cellSize))
 
       # Check to see if source cells inundate anything
       for x, y in sourceCells:
@@ -154,7 +155,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             cmpy = maxy
          
          #TODO: This should use the cost function
-         c = max(self.cMtx[y][x], self.inMtx[cmpy][cmpx], 0)
+         c = max(self.cMtx[y,x], self.inMtx[cmpy,cmpx], 0)
          
          if cmpx != x or cmpy != y:
             
@@ -166,9 +167,9 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             #    int(self.cMtx[cmpy][cmpx]) > c or \
             #    int(self.cMtx[cmpy][cmpx]) < 0:
             
-            if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or \
-               (int(self.cMtx[cmpy][cmpx]) > c and self.cMtx[cmpy][cmpx] >= 0):
-               self.cMtx[cmpy][cmpx] = c
+            if int(self.cMtx[cmpy,cmpx]) == int(self.noDataValue) or \
+               (int(self.cMtx[cmpy,cmpx]) > c and self.cMtx[cmpy,cmpx] >= 0):
+               self.cMtx[cmpy,cmpx] = c
                
                # TODO: Evaluate if we should do this at edges
                self.cellsChanged += 1
@@ -193,8 +194,8 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          #if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or \
          #       int(self.cMtx[cmpy][cmpx]) > cost or \
          #       int(self.cMtx[cmpy][cmpx]) < 0:
-         if int(self.cMtx[y][x]) == int(self.noDataValue) or (cost < int(self.cMtx[y][x]) and self.cMtx[y][x] >= 0):
-            self.cMtx[y][x] = cost
+         if int(self.cMtx[y,x]) == int(self.noDataValue) or (cost < int(self.cMtx[y,x]) and self.cMtx[y,x] >= 0):
+            self.cMtx[y,x] = cost
             self.cellsChanged += 1
             #log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
             addNeighbors(x, y, cost)
@@ -231,6 +232,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             self.chunks.append((minx, miny+self.step, bottomCells))
       #log.debug("Number of chunks: %s" % len(self.chunks))
       #log.debug("Shape: %s, %s" % self.cMtx.shape)
+      print "Done with chunk:", chunk
    
    # .............................
    def writeChangedVectors(self, outDir, taskId='unknown', ts=1.0, dTime=0.0):
