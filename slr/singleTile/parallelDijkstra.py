@@ -59,6 +59,22 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                    source cell
       @note: This method should be implemented in subclasses
       """
+      # Get original edges
+      try:
+         self.origLeft = np.copy(self.cMtx[:,0])
+         self.origRight = np.copy(self.cMtx[:, -1])
+         self.origTop = np.copy(self.cMtx[0,:])
+         self.origBottom = np.copy(self.cMtx[-1, :])
+      except:
+         raise Exception, self.cMtx.shape
+
+      # Split into chunks
+      # Track running chunks
+      # Only one worker per chunk
+      # When done
+      #  Reassemble
+      
+      
       # Find chunks with source cells
       startChunks = {}
       for x,y in self.sourceCells:
@@ -84,13 +100,6 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       for k in startChunks.keys():
          minX, minY, maxX, maxY = startChunks[k]['bbox']
          self.chunks.append((minX, minY, startChunks[k]['sourceCells']))
-      try:
-         self.origLeft = np.copy(self.cMtx[:,0])
-         self.origRight = np.copy(self.cMtx[:, -1])
-         self.origTop = np.copy(self.cMtx[0,:])
-         self.origBottom = np.copy(self.cMtx[-1, :])
-      except:
-         raise Exception, self.cMtx.shape
       ts = []
       
       with concurrent.futures.ThreadPoolExecutor(max_workers=self.maxWorkers) as executor:
