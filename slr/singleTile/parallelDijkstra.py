@@ -157,7 +157,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          # Submit source chunks
          for key in sourceChunks.keys():
             t = executor.submit(self._dijkstraChunk, (chunks[key][INPUT_KEY],
-                  chunks[key][COST_KEY], None, None, None, None, sourceChunks[key]['sources'])
+                  chunks[key][COST_KEY], None, None, None, None, sourceChunks[key]['sources']))
             t.minx = sourceChunks[key]['minx']
             t.miny = sourceChunks[key]['miny']
             t.add_done_callback(taskCallback)
