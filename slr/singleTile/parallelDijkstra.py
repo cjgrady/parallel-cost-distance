@@ -17,6 +17,16 @@ import traceback
 from slr.common.costFunctions import seaLevelRiseCostFn
 from slr.singleTile.base import SingleTileLCP
 
+TASK_WAIT_FOR_LOCK_TIME = .1
+COST_KEY = "cost"
+INPUT_KEY = "input"
+LOCK_WAIT_TIME = .1
+FROM_LEFT_KEY = "fromLeft"
+FROM_RIGHT_KEY = "fromRight"
+FROM_TOP_KEY = "fromTop"
+FROM_BOTTOM_KEY = "fromBottom"
+WAIT_TIME = .5
+
 # .............................................................................
 class SingleTileParallelDijkstraLCP(SingleTileLCP):
    """
@@ -51,7 +61,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       @param maxWorkers: Maximum number of threads to use
       """
       self.maxWorkers = maxWorkers
-      
+
    # ..........................
    def _calculate(self):
       """
@@ -59,6 +69,12 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                    source cell
       @note: This method should be implemented in subclasses
       """
+      # ..........................
+      def _getKey(minx, miny):
+         return "{minx}-{miny}".format(minx=minx, miny=miny)
+      
+      yLen, xLen = self.cMtx.shape
+      
       # Get original edges
       try:
          self.origLeft = np.copy(self.cMtx[:,0])
@@ -68,60 +84,209 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       except:
          raise Exception, self.cMtx.shape
 
+      # Initialize management objects
+      resultsQueue = []
+      resultsLock = False
+      chunks = {}
+      processingChunks = {}
+      
       # Split into chunks
-      # Track running chunks
-      # Only one worker per chunk
-      # When done
-      #  Reassemble
+      for y in xrange(0, yLen, self.step):
+         for x in xrange(0, xLen, self.step):
+            key = _getKey(x, y)
+            chunks[key][INPUT_KEY] = self.inMtx[y:y+self.step,x:x+self.step]
+            chunks[key][COST_KEY] = self.cMtx[y:y+self.step,x:x+self.step]
       
-      
-      # Find chunks with source cells
-      startChunks = {}
-      for x,y in self.sourceCells:
-         # Get min x, miny, maxx, maxy
-         xSteps = int(x / self.step)
-         ySteps = int(y / self.step)
-         minX = xSteps * self.step
-         minY = ySteps * self.step
-         maxX = min(((xSteps+1)*self.step - 1), self.cMtx.shape[1]-1)
-         maxY = min(((ySteps+1)*self.step - 1), self.cMtx.shape[0]-1)
-                    
-         # Make a key
-         k = "%s - %s - %s - %s" % (minX, minY, maxX, maxY)
-         
-         if not startChunks.has_key(k):
-            startChunks[k] = {'bbox' : (minX, minY, maxX, maxY),
-                              'sourceCells' : []}
-         # Add to dictionary with source cell
-         startChunks[k]['sourceCells'].append((x, y))
-      
-      #print "Start chunks:", startChunks
-      
-      for k in startChunks.keys():
-         minX, minY, maxX, maxY = startChunks[k]['bbox']
-         self.chunks.append((minX, minY, startChunks[k]['sourceCells']))
-      ts = []
-      
+      # Initialize executor
       with concurrent.futures.ThreadPoolExecutor(max_workers=self.maxWorkers) as executor:
-         ccc = True
-         while ccc:
-            if len(self.chunks) > 0:
-               chunk = self.chunks.pop(0)
-               t =  executor.submit(self._dijkstraChunk, chunk)
-               ts.append(t)
-            ggg = all([t.done() for t in ts])
-            ccc = len(self.chunks) > 0 or not ggg
+         
+         # task callback function
+         def taskCallback(task):
+            """
+            @summary: Callback after task completion
+            @param task: The completed task
+            """
+            if task.cancelled():
+               #TODO: Handle cancelled
+               raise Exception, "Task cancelled"
+            elif task.done():
+               error = task.exception()
+               if error:
+                  # TODO: Handle error
+                  raise Exception, "Error: %s" % error
+               else:
+                  result = task.result()
+                  # Get minx, miny from task
+                  minx = task.minx
+                  miny = task.miny
+                  key = _getKey(minx, miny)
+            
+                  # Get cost surface and inundated edges
+                  costSurface, left, right, top, bottom = result
+                  
+                  # Update cost surface
+                  chunks[key][COST_KEY] = costSurface
+                  
+                  # Check for lock (wait until open)
+                  if resultsLock:
+                     time.sleep(TASK_WAIT_FOR_LOCK_TIME)
+                  # Append to results queue
+                  resultsQueue.append((minx, miny, left, right, top, bottom))
       
+         # Process source cells
+         sourceChunks = {}
+         # Loop through source cells
+         for x,y in self.sourceCells:
+            # Find which chunk it belongs in
+            # Use integer division and multiplication to find chunk
+            minx = self.step * (x / self.step)
+            miny = self.step * (y / self.step)
+            
+            # Get key
+            key = _getKey(minx, miny)
+            # Add or append source cell to chunk
+            if sourceChunks.has_key(key):
+               sourceChunks[key]['sources'].append((x, y))
+            else:
+               sourceChunks[key] = {
+                  'sources' : [(x,y)],
+                  'minx' : minx,
+                  'miny' : miny
+               }
+         
+         # Submit source chunks
+         for key in sourceChunks.keys():
+            t = executor.submit(self._dijkstraChunk, (chunks[key][INPUT_KEY],
+                  chunks[key][COST_KEY], None, None, None, None, sourceChunks[key]['sources'])
+            t.minx = sourceChunks[key]['minx']
+            t.miny = sourceChunks[key]['miny']
+            t.add_done_callback(taskCallback)
+            
+         # Loop until done
+         cont = True
+         while cont:
+            # Look for results
+            if len(resultsQueue) > 0:
+               # Lock
+               resultsLock = True
+               # Wait for any results that passed lock and need to set
+               time.sleep(LOCK_WAIT_TIME)
+               
+               # TODO: Do we need to lock if use this method?
+               # Process results queue
+               while len(resultsQueue) > 0:
+                  minx, miny, left, right, top, bottom = resultsQueue.pop(0)
+                  key = _getKey(minx, miny)
+                  
+                  # Remove from processing queue
+                  d = processingChunks.pop(key)
+                  
+                  # Resubmit if waiting
+                  if d[FROM_LEFT_KEY] is not None or d[FROM_RIGHT_KEY] is not None or \
+                       d[FROM_TOP_KEY] is not None or d[FROM_BOTTOM_KEY] is not None:
+                     # Put back into processing
+                     processingChunks[key] = {
+                        FROM_LEFT_KEY: None,
+                        FROM_BOTTOM_KEY: None,
+                        FROM_TOP_KEY: None,
+                        FROM_BOTTOM_KEY: None
+                     }
+                     
+                     # Make chunk
+                     chunk = (chunks[key][INPUT_KEY], chunks[key][COST_KEY], d[FROM_LEFT_KEY],
+                                d[FROM_RIGHT_KEY], d[FROM_TOP_KEY], d[FROM_BOTTOM_KEY], None)
+                     # Submit
+                     t = executor.submit(self._dijkstraChunk, chunk)
+                     t.minx = minx
+                     t.miny = miny
+                     # Add callback
+                     t.add_done_callback(taskCallback)
+                  
+                  # Propagate calculations
+                  # Left
+                  if minx - self.step >= 0:
+                     leftKey = _getKey(minx-self.step, miny)
+                     edge = chunks[key][COST_KEY][:,0]
+                     if processingChunks.has_key(leftKey):
+                        processingChunks[leftKey][FROM_RIGHT_KEY] = edge
+                     else:
+                        # Submit left chunk
+                        leftChunk = (chunks[leftKey][INPUT_KEY], chunks[leftKey][COST_KEY],
+                                      None, edge, None, None, None)
+                        lt = executor.submit(self._dijkstraChunk, leftChunk)
+                        lt.minx = minx-self.step
+                        lt.miny = miny
+                        lt.add_done_callback(taskCallback)
+                        
+                  # Right
+                  if minx + self.step < xLen:
+                     rightKey = _getKey(minx+self.step, miny)
+                     edge = chunks[key][COST_KEY][:,-1]
+                     if processingChunks.has_key(rightKey):
+                        processingChunks[rightKey][FROM_LEFT_KEY] = edge
+                     else:
+                        # Submit right chunk
+                        rightChunk = (chunks[rightKey][INPUT_KEY], chunks[rightKey][COST_KEY],
+                                       edge, None, None, None, None)
+                        rt = executor.submit(self._dijkstraChunk, rightChunk)
+                        rt.minx = minx+self.step
+                        rt.miny = miny
+                        rt.add_done_callback(taskCallback)
+                        
+                  # Top
+                  if miny - self.step >= 0:
+                     topKey = _getKey(minx, miny-self.step)
+                     edge = chunks[key][COST_KEY][0,:]
+                     if processingChunks.has_key(topKey):
+                        processingChunks[topKey][FROM_BOTTOM_KEY] = edge
+                     else:
+                        # Submit top chunk
+                        topChunk = (chunks[topKey][INPUT_KEY], chunks[topKey][COST_KEY],
+                                       None, None, None, edge, None)
+                        tt = executor.submit(self._dijkstraChunk, topChunk)
+                        tt.minx = minx
+                        tt.miny = miny - self.step
+                        tt.add_done_callback(taskCallback)
+                        
+                  # Bottom
+                  if miny + self.step < yLen:
+                     bottomKey = _getKey(minx, miny+self.step)
+                     edge = chunks[key][COST_KEY][-1,:]
+                     if processingChunks.has_key(bottomKey):
+                        processingChunks[bottomKey][FROM_TOP_KEY] = edge
+                     else:
+                        # Submit bottom chunk
+                        bottomChunk = (chunks[bottomKey][INPUT_KEY], chunks[bottomKey][COST_KEY],
+                                         None, None, edge, None, None)
+                        bt = executor.submit(self._dijkstraChunk, bottomChunk)
+                        bt.minx = minx
+                        bt.miny = miny+self.step
+                        bt.add_done_callback(taskCallback)
+                  
+               # Should we continue?
+               cont = len(processingChunks.keys()) > 0
+
+               # Unlock
+               resultsLock = False
+            time.sleep(WAIT_TIME)
+               
+      # Resassemble
+      for y in xrange(0, yLen, self.step):
+         for x in xrange(0, xLen, self.step):
+            key = _getKey(x, y)
+            self.cMtx[y:y+self.step, x:x+self.step] = chunks[key][COST_KEY]
+
    # ..........................
    def _dijkstraChunk(self, chunk):
-      #minx, miny, maxx, maxy, sourceCells = chunk
-      minx, miny, sourceCells = chunk
-      print "Working on chunk:", chunk
+      inSurface, costSurface, leftVector, rightVector, topVector, \
+         bottomVector, sourceCells = chunk
+
+      maxy, maxx = costSurface.shape
       
-      maxx = min(minx+self.step, self.inMtx.shape[1])
-      maxy = min(miny+self.step, self.inMtx.shape[0])
+      # Make sure source cells is a list
+      if sourceCells is None:
+         sourceCells = []
       
-      name = '%s-%s-%s-%s' % (minx, miny, maxx, maxy)
       hq = []
       
       leftCells = []
@@ -134,77 +299,72 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          """
          @summary: Add a cell to the heap if appropriate
          """
-         if int(self.cMtx[y,x]) == int(self.noDataValue) or self.cMtx[y,x] > cost:
+         if int(costSurface[y,x]) == int(self.noDataValue) or costSurface[y,x] > cost:
             heapq.heappush(hq, (cost, x, y))
    
       # ........................
       def addNeighbors(x, y, cost):
-         cellCost = self.inMtx[y,x]
+         cellCost = inSurface[y,x]
          if int(cellCost) != int(self.noDataValue):
-            if x - 1 >= minx:
-               addCell(x-1, y, self.costFn(cost, cellCost, self.inMtx[y,x-1], self.cellSize))
+            if x - 1 >= 0:
+               addCell(x-1, y, self.costFn(cost, cellCost, inSurface[y,x-1], self.cellSize))
             if x + 1 < maxx:
-               addCell(x+1, y, self.costFn(cost, cellCost, self.inMtx[y,x+1], self.cellSize))
-            if y-1 >= miny:
-               addCell(x, y-1, self.costFn(cost, cellCost, self.inMtx[y-1,x], self.cellSize))
-            if y+1 < maxy:
-               addCell(x, y+1, self.costFn(cost, cellCost, self.inMtx[y+1,x], self.cellSize))
+               addCell(x+1, y, self.costFn(cost, cellCost, inSurface[y,x+1], self.cellSize))
+            if y - 1 >= miny:
+               addCell(x, y-1, self.costFn(cost, cellCost, inSurface[y-1,x], self.cellSize))
+            if y + 1 < maxy:
+               addCell(x, y+1, self.costFn(cost, cellCost, inSurface[y+1,x], self.cellSize))
 
+      # Process source vectors
+      # Left
+      if leftVector is not None:
+         for y in xrange(maxy):
+            c = max(inSurface[y:0], min(leftVector[y], costSurface[y:0))
+            if c < costSurface[y:0]:
+               costSurface[y:0] = c
+               sourceCells.append((0, y))
+      # Right
+      if rightVector is not None:
+         for y in xrange(maxy):
+            c = max(inSurface[y:-1], min(rightVector[y], costSurface[y:-1]))
+            if c < costSurface[y:-1]:
+               costSurface[y:-1] = c
+               sourceCells.append((maxx-1, y))
+      # Top
+      if topVector is not None:
+         for x in xrange(maxx):
+            c = max(inSurface[0:x], min(topVector[x], costSurface[0:x]))
+            if c < costSurface[0:x]:
+               costSurface[0:x] = c
+               sourceCells.append((0, x))
+      # Bottom
+      if bottomVector is not None:
+         for x in xrange(maxx):
+            c = max(inSurface[-1:x], min(bottomVector[x], costSurface[-1:x]))
+            if c < costSurface[-1:x]:
+               costSurface[-1:x] = c
+               sourceCells.append((maxy-1, x))
+            
+      
       # Check to see if source cells inundate anything
       for x, y in sourceCells:
-         cmpx = x
-         cmpy = y
-         if x < minx:
-            cmpx = minx
-         if x >= maxx:
-            cmpx = maxx
-         if y < miny:
-            cmpy = miny
-         if y >= maxy:
-            cmpy = maxy
          
          #TODO: This should use the cost function
-         c = max(self.cMtx[y,x], self.inMtx[cmpy,cmpx], 0)
-         
-         if cmpx != x or cmpy != y:
-            
-            # Update cost if:
-            #   - cost is no data
-            #   - cost is greater than c
-            #   - cost is less than 0
-            #if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or \
-            #    int(self.cMtx[cmpy][cmpx]) > c or \
-            #    int(self.cMtx[cmpy][cmpx]) < 0:
-            
-            if int(self.cMtx[cmpy,cmpx]) == int(self.noDataValue) or \
-               (int(self.cMtx[cmpy,cmpx]) > c and self.cMtx[cmpy,cmpx] >= 0):
-               self.cMtx[cmpy,cmpx] = c
-               
-               # TODO: Evaluate if we should do this at edges
-               self.cellsChanged += 1
-               addNeighbors(cmpx, cmpy, c)
-            else:
-               #log.debug("Not adding: %s, %s, %s, %s, %s, %s" % (self.cMtx[cmpy][cmpx], self.noDataValue, self.cMtx[cmpy][cmpx], c, x, y))
-               pass
-         else:
-            addNeighbors(x, y, c)
+         c = max(costSurface[y,x], inSurface[y,x], 0)
+         addNeighbors(x, y, c)
             
       # .........................
       # Dijkstra
       while len(hq) > 0:
          cost, x, y = heapq.heappop(hq)
-         #log.debug("Popped %s, %s, %s" % (cost, x, y))
-         #res.append("Popped %s, %s, %s" % (cost, x, y))
 
          # Update cost if:
          #   - cost is no data
          #   - cost is greater than c
          #   - cost is less than 0
-         #if int(self.cMtx[cmpy][cmpx]) == int(self.noDataValue) or \
-         #       int(self.cMtx[cmpy][cmpx]) > cost or \
-         #       int(self.cMtx[cmpy][cmpx]) < 0:
-         if int(self.cMtx[y,x]) == int(self.noDataValue) or (cost < int(self.cMtx[y,x]) and self.cMtx[y,x] >= 0):
-            self.cMtx[y,x] = cost
+         if int(costSurface[y,x]) == int(self.noDataValue) or \
+             (cost < int(costSurface[y,x]) and costSurface[y,x] >= 0):
+            costSurface[y,x] = cost
             self.cellsChanged += 1
             #log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
             addNeighbors(x, y, cost)
@@ -226,23 +386,18 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       # Spread
       # Assume that chunks start on left and top edges and partials may be at
       #    bottom and right
-      
+      leftVect = rightVect = topVect = bottomVect = None
       if len(leftCells) > 0:
-         if minx > 0:
-            self.chunks.append((minx-self.step, miny, leftCells))
+         leftVect = costSurface[:,0]
       if len(rightCells) > 0:
-         if maxx < self.cMtx.shape[1]-1:
-            self.chunks.append((minx+self.step, miny, rightCells))
+         rightVect = costSurface[:,-1]
       if len(topCells) > 0:
-         if miny > 0:
-            self.chunks.append((minx, miny-self.step, topCells))
+         topVect = costSurface[0,:]
       if len(bottomCells) > 0:
-         if maxy < self.cMtx.shape[0]-1:
-            self.chunks.append((minx, miny+self.step, bottomCells))
-      #log.debug("Number of chunks: %s" % len(self.chunks))
-      #log.debug("Shape: %s, %s" % self.cMtx.shape)
-      print "Done with chunk:", chunk
-   
+         bottomVect = costSurface[-1,:]
+
+      return costSurface, leftVect, rightVect, topVect, bottomVect
+         
    # .............................
    def writeChangedVectors(self, outDir, taskId='unknown', ts=1.0, dTime=0.0):
       self.newLeft = self.cMtx[:,0]
@@ -257,33 +412,22 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       
       # Look for problems where input data is not no data but output grid is
       
-      # TODO: Couldn't I just check for inequality?
-      
       if self.cellsChanged > 0:
-         #if len(np.where(self.origLeft > self.newLeft) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
-         #if len(np.where((np.round(self.origLeft, 1) -.1 > np.round(self.newLeft, 1)) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
-         #if len(np.where((self.origLeft > self.newLeft) | (self.origLeft+1 >= self.noDataValue))[0]) > 0:
          if len(np.where(self.origLeft != self.newLeft)[0]) > 0:
             fn = os.path.join(outDir, '%s-toLeft.npy' % taskId)
             np.save(fn, self.newLeft)
             l = True
          
-         #if len(np.where((np.round(self.origTop, 1) -.1 > np.round(self.newTop, 1)) | (self.origTop+1 >= self.noDataValue))[0]) > 0:
-         #if len(np.where((self.origTop > self.newTop) | (self.origTop+1 >= self.noDataValue))[0]) > 0:
          if len(np.where(self.origTop != self.newTop)[0]) > 0:
             fn = os.path.join(outDir, '%s-toTop.npy' % taskId)
             np.save(fn, self.newTop)
             t = True
          
-         #if len(np.where((np.round(self.origRight, 1) -.1 > np.round(self.newRight, 1)) | (self.origRight+1 >= self.noDataValue))[0]) > 0:
-         #if len(np.where((self.origRight > self.newRight) | (self.origRight+1 >= self.noDataValue))[0]) > 0:
          if len(np.where(self.origRight != self.newRight)[0]) > 0:
             fn = os.path.join(outDir, '%s-toRight.npy' % taskId)
             np.save(fn, self.newRight)
             r = True
          
-         #if len(np.where((np.round(self.origBottom, 1) -.1 > np.round(self.newBottom, 1)) | (self.origBottom >= self.noDataValue))[0]) > 0:
-         #if len(np.where((self.origBottom > self.newBottom) | (self.origBottom >= self.noDataValue))[0]) > 0:
          if len(np.where(self.origBottom != self.newBottom)[0]) > 0:
             fn = os.path.join(outDir, '%s-toBottom.npy' % taskId)
             np.save(fn, self.newBottom)
