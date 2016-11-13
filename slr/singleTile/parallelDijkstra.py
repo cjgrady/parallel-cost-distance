@@ -94,8 +94,10 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       for y in xrange(0, yLen, self.step):
          for x in xrange(0, xLen, self.step):
             key = _getKey(x, y)
-            chunks[key][INPUT_KEY] = self.inMtx[y:y+self.step,x:x+self.step]
-            chunks[key][COST_KEY] = self.cMtx[y:y+self.step,x:x+self.step]
+            chunks[key] = {
+             INPUT_KEY : self.inMtx[y:y+self.step,x:x+self.step],
+             COST_KEY : self.cMtx[y:y+self.step,x:x+self.step]
+            }
       
       # Initialize executor
       with concurrent.futures.ThreadPoolExecutor(max_workers=self.maxWorkers) as executor:
@@ -146,10 +148,10 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             key = _getKey(minx, miny)
             # Add or append source cell to chunk
             if sourceChunks.has_key(key):
-               sourceChunks[key]['sources'].append((x, y))
+               sourceChunks[key]['sources'].append((x-minx, y-miny))
             else:
                sourceChunks[key] = {
-                  'sources' : [(x,y)],
+                  'sources' : [(x-minx,y-miny)],
                   'minx' : minx,
                   'miny' : miny
                }
