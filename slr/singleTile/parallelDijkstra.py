@@ -319,7 +319,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       # Left
       if leftVector is not None:
          for y in xrange(maxy):
-            c = max(inSurface[y:0], min(leftVector[y], costSurface[y:0))
+            c = max(inSurface[y:0], min(leftVector[y], costSurface[y:0]))
             if c < costSurface[y:0]:
                costSurface[y:0] = c
                sourceCells.append((0, y))
