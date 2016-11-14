@@ -16,16 +16,17 @@ import traceback
 
 from slr.common.costFunctions import seaLevelRiseCostFn
 from slr.singleTile.base import SingleTileLCP
+from concurrent.futures import process
 
-TASK_WAIT_FOR_LOCK_TIME = .1
+TASK_WAIT_FOR_LOCK_TIME = .01
 COST_KEY = "cost"
 INPUT_KEY = "input"
-LOCK_WAIT_TIME = .1
+LOCK_WAIT_TIME = .01
 FROM_LEFT_KEY = "fromLeft"
 FROM_RIGHT_KEY = "fromRight"
 FROM_TOP_KEY = "fromTop"
 FROM_BOTTOM_KEY = "fromBottom"
-WAIT_TIME = .5
+WAIT_TIME = .1
 
 # .............................................................................
 class SingleTileParallelDijkstraLCP(SingleTileLCP):
@@ -115,7 +116,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                error = task.exception()
                if error:
                   # TODO: Handle error
-                  raise Exception, "Error: %s, %s" % (error, str(dir(error)))
+                  raise Exception, "Error (%s, %s): %s, %s" % (task.minx, task.miny, error, str(dir(error)))
                else:
                   result = task.result()
                   # Get minx, miny from task
@@ -143,15 +144,17 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             # Use integer division and multiplication to find chunk
             minx = self.step * (x / self.step)
             miny = self.step * (y / self.step)
-            
+            modx = x-minx
+            mody = y-miny
+            #print x, y, minx, miny, modx, mody
             # Get key
             key = _getKey(minx, miny)
             # Add or append source cell to chunk
             if sourceChunks.has_key(key):
-               sourceChunks[key]['sources'].append((x-minx, y-miny))
+               sourceChunks[key]['sources'].append((modx, mody))
             else:
                sourceChunks[key] = {
-                  'sources' : [(x-minx,y-miny)],
+                  'sources' : [(modx, mody)],
                   'minx' : minx,
                   'miny' : miny
                }
@@ -212,7 +215,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                   
                   # Propagate calculations
                   # Left
-                  if minx - self.step >= 0:
+                  if left is not None and minx - self.step >= 0:
                      leftKey = _getKey(minx-self.step, miny)
                      edge = chunks[key][COST_KEY][:,0]
                      if processingChunks.has_key(leftKey):
@@ -233,7 +236,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                         }
                         
                   # Right
-                  if minx + self.step < xLen:
+                  if right is not None and minx + self.step < xLen:
                      rightKey = _getKey(minx+self.step, miny)
                      edge = chunks[key][COST_KEY][:,-1]
                      if processingChunks.has_key(rightKey):
@@ -254,7 +257,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                         }
                         
                   # Top
-                  if miny - self.step >= 0:
+                  if top is not None and miny - self.step >= 0:
                      topKey = _getKey(minx, miny-self.step)
                      edge = chunks[key][COST_KEY][0,:]
                      if processingChunks.has_key(topKey):
@@ -275,7 +278,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                         }
                         
                   # Bottom
-                  if miny + self.step < yLen:
+                  if bottom is not None and miny + self.step < yLen:
                      bottomKey = _getKey(minx, miny+self.step)
                      edge = chunks[key][COST_KEY][-1,:]
                      if processingChunks.has_key(bottomKey):
@@ -297,16 +300,21 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                   
                # Should we continue?
                cont = len(processingChunks.keys()) > 0
+               #print len(processingChunks.keys())
+               #print processingChunks.keys()
 
                # Unlock
                resultsLock = False
             time.sleep(WAIT_TIME)
-               
+      
       # Resassemble
+      #print "Reassemble"
       for y in xrange(0, yLen, self.step):
          for x in xrange(0, xLen, self.step):
             key = _getKey(x, y)
             self.cMtx[y:y+self.step, x:x+self.step] = chunks[key][COST_KEY]
+            #print key
+            #print self.cMtx[y:y+self.step, x:x+self.step]
 
    # ..........................
    def _dijkstraChunk(self, chunk):
@@ -352,31 +360,43 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          # Left
          if leftVector is not None:
             for y in xrange(maxy):
-               c = max(inSurface[y,0], min(leftVector[y], costSurface[y,0]))
-               if c < costSurface[y,0]:
+               if costSurface[y,0] < 0:
+                  c = max(inSurface[y,0], leftVector[y])
+               else:
+                  c = max(inSurface[y,0], min(leftVector[y], costSurface[y,0]))
+               if c < costSurface[y,0] or costSurface[y,0] < 0:
                   costSurface[y,0] = c
                   sourceCells.append((0, y))
          # Right
          if rightVector is not None:
             for y in xrange(maxy):
-               c = max(inSurface[y,-1], min(rightVector[y], costSurface[y,-1]))
-               if c < costSurface[y,-1]:
+               if costSurface[y,-1] < 0:
+                  c = max(inSurface[y,-1], rightVector[y])
+               else:
+                  c = max(inSurface[y,-1], min(rightVector[y], costSurface[y,-1]))
+               if c < costSurface[y,-1] or costSurface[y,-1] < 0:
                   costSurface[y,-1] = c
                   sourceCells.append((maxx-1, y))
          # Top
          if topVector is not None:
             for x in xrange(maxx):
-               c = max(inSurface[0,x], min(topVector[x], costSurface[0,x]))
-               if c < costSurface[0,x]:
+               if costSurface[0,x] < 0:
+                  c = max(inSurface[0,x], topVector[x])
+               else:
+                  c = max(inSurface[0,x], min(topVector[x], costSurface[0,x]))
+               if c < costSurface[0,x] or costSurface[0,x] < 0:
                   costSurface[0,x] = c
-                  sourceCells.append((0, x))
+                  sourceCells.append((x, 0))
          # Bottom
          if bottomVector is not None:
             for x in xrange(maxx):
-               c = max(inSurface[-1,x], min(bottomVector[x], costSurface[-1,x]))
-               if c < costSurface[-1,x]:
+               if costSurface[-1,x] < 0:
+                  c = max(inSurface[-1,x], bottomVector[x])
+               else:
+                  c = max(inSurface[-1,x], min(bottomVector[x], costSurface[-1,x]))
+               if c < costSurface[-1,x] or costSurface[-1,x] < 0:
                   costSurface[-1,x] = c
-                  sourceCells.append((maxy-1, x))
+                  sourceCells.append((x, maxy-1))
                
          
          # Check to see if source cells inundate anything
@@ -493,6 +513,8 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       
 # .............................................................................
 if __name__ == "__main__": # pragma: no cover
+   import logging
+   logging.basicConfig()
    
    aTime = time.time()
    
