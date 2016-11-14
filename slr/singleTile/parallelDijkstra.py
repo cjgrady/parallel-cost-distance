@@ -115,7 +115,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                error = task.exception()
                if error:
                   # TODO: Handle error
-                  raise Exception, "Error: %s" % error
+                  raise Exception, "Error: %s, %s" % (error, str(dir(error)))
                else:
                   result = task.result()
                   # Get minx, miny from task
@@ -163,6 +163,12 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             t.minx = sourceChunks[key]['minx']
             t.miny = sourceChunks[key]['miny']
             t.add_done_callback(taskCallback)
+            processingChunks[key] = {
+               FROM_LEFT_KEY : None,
+               FROM_RIGHT_KEY : None,
+               FROM_TOP_KEY : None,
+               FROM_BOTTOM_KEY : None
+            }
             
          # Loop until done
          cont = True
@@ -189,7 +195,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                      # Put back into processing
                      processingChunks[key] = {
                         FROM_LEFT_KEY: None,
-                        FROM_BOTTOM_KEY: None,
+                        FROM_RIGHT_KEY: None,
                         FROM_TOP_KEY: None,
                         FROM_BOTTOM_KEY: None
                      }
@@ -219,6 +225,12 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                         lt.minx = minx-self.step
                         lt.miny = miny
                         lt.add_done_callback(taskCallback)
+                        processingChunks[leftKey] = {
+                           FROM_LEFT_KEY: None,
+                           FROM_RIGHT_KEY: None,
+                           FROM_TOP_KEY: None,
+                           FROM_BOTTOM_KEY: None
+                        }
                         
                   # Right
                   if minx + self.step < xLen:
@@ -234,6 +246,12 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                         rt.minx = minx+self.step
                         rt.miny = miny
                         rt.add_done_callback(taskCallback)
+                        processingChunks[rightKey] = {
+                           FROM_LEFT_KEY: None,
+                           FROM_RIGHT_KEY: None,
+                           FROM_TOP_KEY: None,
+                           FROM_BOTTOM_KEY: None
+                        }
                         
                   # Top
                   if miny - self.step >= 0:
@@ -249,6 +267,12 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                         tt.minx = minx
                         tt.miny = miny - self.step
                         tt.add_done_callback(taskCallback)
+                        processingChunks[topKey] = {
+                           FROM_LEFT_KEY: None,
+                           FROM_RIGHT_KEY: None,
+                           FROM_TOP_KEY: None,
+                           FROM_BOTTOM_KEY: None
+                        }
                         
                   # Bottom
                   if miny + self.step < yLen:
@@ -264,6 +288,12 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                         bt.minx = minx
                         bt.miny = miny+self.step
                         bt.add_done_callback(taskCallback)
+                        processingChunks[bottomKey] = {
+                           FROM_LEFT_KEY: None,
+                           FROM_RIGHT_KEY: None,
+                           FROM_TOP_KEY: None,
+                           FROM_BOTTOM_KEY: None
+                        }
                   
                # Should we continue?
                cont = len(processingChunks.keys()) > 0
@@ -280,126 +310,130 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
 
    # ..........................
    def _dijkstraChunk(self, chunk):
-      inSurface, costSurface, leftVector, rightVector, topVector, \
-         bottomVector, sourceCells = chunk
-
-      maxy, maxx = costSurface.shape
-      
-      # Make sure source cells is a list
-      if sourceCells is None:
-         sourceCells = []
-      
-      hq = []
-      
-      leftCells = []
-      rightCells = []
-      topCells = []
-      bottomCells = []
-
-      # ........................
-      def addCell(x, y, cost):
-         """
-         @summary: Add a cell to the heap if appropriate
-         """
-         if int(costSurface[y,x]) == int(self.noDataValue) or costSurface[y,x] > cost:
-            heapq.heappush(hq, (cost, x, y))
+      try:
+         inSurface, costSurface, leftVector, rightVector, topVector, \
+            bottomVector, sourceCells = chunk
    
-      # ........................
-      def addNeighbors(x, y, cost):
-         cellCost = inSurface[y,x]
-         if int(cellCost) != int(self.noDataValue):
-            if x - 1 >= 0:
-               addCell(x-1, y, self.costFn(cost, cellCost, inSurface[y,x-1], self.cellSize))
-            if x + 1 < maxx:
-               addCell(x+1, y, self.costFn(cost, cellCost, inSurface[y,x+1], self.cellSize))
-            if y - 1 >= miny:
-               addCell(x, y-1, self.costFn(cost, cellCost, inSurface[y-1,x], self.cellSize))
-            if y + 1 < maxy:
-               addCell(x, y+1, self.costFn(cost, cellCost, inSurface[y+1,x], self.cellSize))
-
-      # Process source vectors
-      # Left
-      if leftVector is not None:
-         for y in xrange(maxy):
-            c = max(inSurface[y:0], min(leftVector[y], costSurface[y:0]))
-            if c < costSurface[y:0]:
-               costSurface[y:0] = c
-               sourceCells.append((0, y))
-      # Right
-      if rightVector is not None:
-         for y in xrange(maxy):
-            c = max(inSurface[y:-1], min(rightVector[y], costSurface[y:-1]))
-            if c < costSurface[y:-1]:
-               costSurface[y:-1] = c
-               sourceCells.append((maxx-1, y))
-      # Top
-      if topVector is not None:
-         for x in xrange(maxx):
-            c = max(inSurface[0:x], min(topVector[x], costSurface[0:x]))
-            if c < costSurface[0:x]:
-               costSurface[0:x] = c
-               sourceCells.append((0, x))
-      # Bottom
-      if bottomVector is not None:
-         for x in xrange(maxx):
-            c = max(inSurface[-1:x], min(bottomVector[x], costSurface[-1:x]))
-            if c < costSurface[-1:x]:
-               costSurface[-1:x] = c
-               sourceCells.append((maxy-1, x))
-            
-      
-      # Check to see if source cells inundate anything
-      for x, y in sourceCells:
+         maxy, maxx = costSurface.shape
          
-         #TODO: This should use the cost function
-         c = max(costSurface[y,x], inSurface[y,x], 0)
-         addNeighbors(x, y, c)
-            
-      # .........................
-      # Dijkstra
-      while len(hq) > 0:
-         cost, x, y = heapq.heappop(hq)
-
-         # Update cost if:
-         #   - cost is no data
-         #   - cost is greater than c
-         #   - cost is less than 0
-         if int(costSurface[y,x]) == int(self.noDataValue) or \
-             (cost < int(costSurface[y,x]) and costSurface[y,x] >= 0):
-            costSurface[y,x] = cost
-            self.cellsChanged += 1
-            #log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
-            addNeighbors(x, y, cost)
-            # Should we spread?
-            #res.append("x, y, min x and y, max x and y: (%s, %s) (%s, %s), (%s, %s)" % (x, y, minx, miny, maxx, maxy))
-            if x == minx:
-               #res.append("Adding a left cell")
-               leftCells.append((x, y))
-            if x == maxx-1:
-               #res.append("Adding a right cell")
-               rightCells.append((x, y))
-            if y == maxy-1:
-               #res.append("Adding a bottom cell")
-               bottomCells.append((x, y))
-            if y == miny:
-               #res.append("Adding a top cell")
-               topCells.append((x, y))
-      
-      # Spread
-      # Assume that chunks start on left and top edges and partials may be at
-      #    bottom and right
-      leftVect = rightVect = topVect = bottomVect = None
-      if len(leftCells) > 0:
-         leftVect = costSurface[:,0]
-      if len(rightCells) > 0:
-         rightVect = costSurface[:,-1]
-      if len(topCells) > 0:
-         topVect = costSurface[0,:]
-      if len(bottomCells) > 0:
-         bottomVect = costSurface[-1,:]
-
-      return costSurface, leftVect, rightVect, topVect, bottomVect
+         # Make sure source cells is a list
+         if sourceCells is None:
+            sourceCells = []
          
+         hq = []
+         
+         leftCells = []
+         rightCells = []
+         topCells = []
+         bottomCells = []
+   
+         # ........................
+         def addCell(x, y, cost):
+            """
+            @summary: Add a cell to the heap if appropriate
+            """
+            if int(costSurface[y,x]) == int(self.noDataValue) or costSurface[y,x] > cost:
+               heapq.heappush(hq, (cost, x, y))
+      
+         # ........................
+         def addNeighbors(x, y, cost):
+            cellCost = inSurface[y,x]
+            if int(cellCost) != int(self.noDataValue):
+               if x - 1 >= 0:
+                  addCell(x-1, y, self.costFn(cost, cellCost, inSurface[y,x-1], self.cellSize))
+               if x + 1 < maxx:
+                  addCell(x+1, y, self.costFn(cost, cellCost, inSurface[y,x+1], self.cellSize))
+               if y - 1 >= 0:
+                  addCell(x, y-1, self.costFn(cost, cellCost, inSurface[y-1,x], self.cellSize))
+               if y + 1 < maxy:
+                  addCell(x, y+1, self.costFn(cost, cellCost, inSurface[y+1,x], self.cellSize))
+   
+         # Process source vectors
+         # Left
+         if leftVector is not None:
+            for y in xrange(maxy):
+               c = max(inSurface[y,0], min(leftVector[y], costSurface[y,0]))
+               if c < costSurface[y,0]:
+                  costSurface[y,0] = c
+                  sourceCells.append((0, y))
+         # Right
+         if rightVector is not None:
+            for y in xrange(maxy):
+               c = max(inSurface[y,-1], min(rightVector[y], costSurface[y,-1]))
+               if c < costSurface[y,-1]:
+                  costSurface[y,-1] = c
+                  sourceCells.append((maxx-1, y))
+         # Top
+         if topVector is not None:
+            for x in xrange(maxx):
+               c = max(inSurface[0,x], min(topVector[x], costSurface[0,x]))
+               if c < costSurface[0,x]:
+                  costSurface[0,x] = c
+                  sourceCells.append((0, x))
+         # Bottom
+         if bottomVector is not None:
+            for x in xrange(maxx):
+               c = max(inSurface[-1,x], min(bottomVector[x], costSurface[-1,x]))
+               if c < costSurface[-1,x]:
+                  costSurface[-1,x] = c
+                  sourceCells.append((maxy-1, x))
+               
+         
+         # Check to see if source cells inundate anything
+         for x, y in sourceCells:
+            
+            #TODO: This should use the cost function
+            c = max(costSurface[y,x], inSurface[y,x], 0)
+            addNeighbors(x, y, c)
+               
+         # .........................
+         # Dijkstra
+         while len(hq) > 0:
+            cost, x, y = heapq.heappop(hq)
+   
+            # Update cost if:
+            #   - cost is no data
+            #   - cost is greater than c
+            #   - cost is less than 0
+            if int(costSurface[y,x]) == int(self.noDataValue) or \
+                (cost < int(costSurface[y,x]) and costSurface[y,x] >= 0):
+               costSurface[y,x] = cost
+               self.cellsChanged += 1
+               #log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
+               addNeighbors(x, y, cost)
+               # Should we spread?
+               #res.append("x, y, min x and y, max x and y: (%s, %s) (%s, %s), (%s, %s)" % (x, y, minx, miny, maxx, maxy))
+               if x == 0:
+                  #res.append("Adding a left cell")
+                  leftCells.append((x, y))
+               if x == maxx-1:
+                  #res.append("Adding a right cell")
+                  rightCells.append((x, y))
+               if y == maxy-1:
+                  #res.append("Adding a bottom cell")
+                  bottomCells.append((x, y))
+               if y == 0:
+                  #res.append("Adding a top cell")
+                  topCells.append((x, y))
+         
+         # Spread
+         # Assume that chunks start on left and top edges and partials may be at
+         #    bottom and right
+         leftVect = rightVect = topVect = bottomVect = None
+         if len(leftCells) > 0:
+            leftVect = costSurface[:,0]
+         if len(rightCells) > 0:
+            rightVect = costSurface[:,-1]
+         if len(topCells) > 0:
+            topVect = costSurface[0,:]
+         if len(bottomCells) > 0:
+            bottomVect = costSurface[-1,:]
+   
+         return costSurface, leftVect, rightVect, topVect, bottomVect
+      except Exception, e:
+         msg = traceback.format_exc()
+         raise Exception, str(msg)
+      
    # .............................
    def writeChangedVectors(self, outDir, taskId='unknown', ts=1.0, dTime=0.0):
       self.newLeft = self.cMtx[:,0]
