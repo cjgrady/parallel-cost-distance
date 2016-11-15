@@ -99,6 +99,7 @@ class MultiTileWqParallelDijkstraLCP(object):
             costGrid=self._getGridFilename(self.cDir, minx, miny),
             ss=self.stepSize, ts=self.tileSize, outputsPath=self.oDir, taskId=tag,
             e=os.path.join(self.oDir, '%s.error' % tag))
+      print cmd
       task.specify_command(cmd)
       task.specify_output_file(self._getSummaryFile(tag))
       task.specify_tag(str(tag))
@@ -138,6 +139,8 @@ class MultiTileWqParallelDijkstraLCP(object):
       currentTag = 1
       inputGrids = glob.glob(os.path.join(self.inDir, "*.asc"))
       
+      #cctools_debug_flags_set("all")
+      #cctools_debug_config_file("/tmp/myWQ.log")
       port = WORK_QUEUE_DEFAULT_PORT
       print "Port:" , port
       
@@ -145,6 +148,8 @@ class MultiTileWqParallelDijkstraLCP(object):
       waitingGrids = {}
       
       q = WorkQueue(port=port)
+      #print "Monitoring"
+      #print q.enable_monitoring_full('/tmp/log')
       
       for g in inputGrids:
          task = Task('')
@@ -155,7 +160,7 @@ class MultiTileWqParallelDijkstraLCP(object):
          # Also remove leading 'grid' and trailing '.asc'
          tmpG = os.path.basename(g).replace('--', '-!').replace('grid', '').replace('.asc', '')
          splitG = tmpG.split('-')
-         print splitG
+         #print splitG
          # Replace inserted !s with -s for negative
          minx = splitG[0].replace('!', '-')
          miny = splitG[1].replace('!', '-')
@@ -183,6 +188,8 @@ class MultiTileWqParallelDijkstraLCP(object):
             r = 0
             print "Task id:", task.id
             print "Task tag:", task.tag
+            #print dir(task)
+            #print task.resources_measured()
             
             if os.path.exists(os.path.join(self.oDir, '%s.error' % task.tag)):
                print open(os.path.join(self.oDir, '%s.error' % task.tag)).read()
@@ -210,7 +217,6 @@ class MultiTileWqParallelDijkstraLCP(object):
                      # Check that pop is modifying dictionary
                   else:
                      tmp = waitingGrids.pop(k)[0]
-                  print tmp
                   ss, vs = tmp
                   #sides = waitingGrids.pop(k)
                   #print "Sides:", sides
