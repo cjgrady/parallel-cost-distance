@@ -2,7 +2,9 @@
 @summary: This module contains a more traditional implementation of Dijkstra's
              algorithm for graph traversal that does not operate in parallel
 @author: CJ Grady
-@status: alpha
+@version: 1.0
+@status: release
+@license: gpl2
 """
 import heapq
 
@@ -26,12 +28,21 @@ class SingleTileSerialDijkstraLCP(SingleTileLCP):
       def addCell(x, y, cost):
          """
          @summary: Add a cell to the heap if appropriate
+         @param x: The x coordinate of the cell
+         @param y: The y coordinate of the cell
+         @param cost: The new cost to test for the cell
          """
          if int(self.cMtx[y][x]) == int(self.noDataValue) or self.cMtx[y][x] > cost:
             heapq.heappush(hq, (cost, x, y))
    
       # ........................
       def addNeighbors(x, y, cost):
+         """
+         @summary: Add neighbors of the cell to the heap
+         @param x: The x value of the cell
+         @param y: The y value of the cell
+         @param cost: The cost of the cell
+         """
          cellCost = self.inMtx[y][x]
          if cellCost != self.noDataValue:
             if x - 1 >= 0:

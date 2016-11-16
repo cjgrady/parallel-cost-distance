@@ -3,7 +3,8 @@
              calculating cost distance
 @author: CJ Grady
 @version: 1.0
-@status: beta
+@status: release
+@license: gpl2
 @note: All cost functions should take arguments:
         - currentCost: The cost already incurred
         - cellValue: The value at the origin cell

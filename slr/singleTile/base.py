@@ -2,7 +2,9 @@
 @summary: This module contains the base class for least cost path calculations
              for a single tile
 @author: CJ Grady
-@status: alpha
+@version: 1.0
+@status: release
+@license: gpl2
 """
 import numpy
 import os
