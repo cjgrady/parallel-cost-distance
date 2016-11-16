@@ -13,6 +13,6 @@ before_script:
   - echo $PYTHONPATH
   - echo $PATH
   - ls $PYTHONPATH
-script: nosetests --with-coverage --cover-package=slr
+script: nosetests --with-coverage --cover-package=slr tests/test_all/test_all.py
 after_success:
   - coveralls
