@@ -1,8 +1,10 @@
 """
 @summary: This script will split a large ASCII file into smaller chunks
 @author: CJ Grady
+@version: 1.0
+@status: release
+@license: gpl2
 """
-
 import argparse
 import numpy as np
 import os

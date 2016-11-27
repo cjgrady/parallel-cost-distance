@@ -1,6 +1,9 @@
 """
 @summary: Runs using Work Queue over multiple tiles
 @author: CJ Grady
+@version: 1.0
+@status: release
+@license: gpl2
 """
 import argparse
 import glob
@@ -16,16 +19,16 @@ import slr.singleTile.parallelDijkstra
 PYTHON_BIN = sys.executable
 # Assume that work queue is in path
 WORKER_BIN = "work_queue_worker"
-#PATH = "export PYTHONPATH=/home/cjgrady/cctools/lib/python2.7/site-packages/:/home/cjgrady/git/irksome-broccoli/"
-# PYTHONPATH to export for workers
 import slr
 pth = os.path.abspath(os.path.join(os.path.dirname(slr.__file__), '..'))
 WORKER_PYTHONPATH = "export PYTHONPATH={pypth}".format(pypth=pth)
-#WORKER_PYTHONPATH = "export PYTHONPATH={0}".format(':'.join(sys.path))
 
 # .............................................................................
 def getParallelDijkstraModulePath():
-   print slr.singleTile.parallelDijkstra.__file__
+   """
+   @summary: Get the module path for the parallel Dijkstra code.  This is used
+                for commands to Work Queue
+   """
    return os.path.abspath(slr.singleTile.parallelDijkstra.__file__)
 
 # .............................................................................
@@ -36,6 +39,9 @@ class MultiTileWqParallelDijkstraLCP(object):
    """
    # ...........................
    def __init__(self, inDir, costDir, outDir, tileSize, stepSize, summaryFn=None):
+      """
+      @summary: Constructor
+      """
       self.inDir = inDir
       self.cDir = costDir
       self.oDir = outDir
@@ -46,10 +52,24 @@ class MultiTileWqParallelDijkstraLCP(object):
 
    # ...........................
    def _getGridFilename(self, d, minx, miny):
+      """
+      @summary: Get the filename for a grid matching the geographic parameters
+      @param d: The directory where the grid is located
+      @param minx: The minimum X value for the grid
+      @param miny: The minimum Y value for the grid
+      """
       return os.path.join(d, self.grids["{0},{1}".format(minx, miny)])
    
    # ...........................
-   def _getConnectedTask(self, minx, miny, vects, fromSides, tag): # Removed max x and max y
+   def _getConnectedTask(self, minx, miny, vects, fromSides, tag):
+      """
+      @summary: Submit a task to WorkQueue
+      @param minx: The minimum X for the region
+      @param miny: The minimum Y for the region
+      @param vects: List of source vectors for this task
+      @param fromSides: List of side keys (matches vects)
+      @param tag: A tag to associate with the task
+      """
       inGrid = self._getGridFilename(self.inDir, minx, miny)
       
       if os.path.exists(inGrid):
@@ -64,7 +84,6 @@ class MultiTileWqParallelDijkstraLCP(object):
          
          cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {vectsSec} {sidesSec} -e {e}".format(
                python=PYTHON_BIN,
-               #pycmd='~/git/irksome-broccoli/src/singleTile/parallelDijkstra.py',
                pycmd=getParallelDijkstraModulePath(),
                inGrid=self._getGridFilename(self.inDir, minx, miny),
                costGrid=self._getGridFilename(self.cDir, minx, miny),
@@ -72,7 +91,6 @@ class MultiTileWqParallelDijkstraLCP(object):
                taskId=tag, vectsSec=vectsSec, sidesSec=sidesSec,
                e=os.path.join(self.oDir, '%s.error' % tag))
          print "Submitting:"
-         print cmd
          task.specify_command(cmd)
          task.specify_output_file(self._getSummaryFile(tag))
          task.specify_tag(str(tag))
@@ -83,6 +101,11 @@ class MultiTileWqParallelDijkstraLCP(object):
 
    # ...........................
    def _getKey(self, minx, miny):
+      """
+      @summary: Get a key given a minimum x and y
+      @param minx: Minimum X value for a tile
+      @param miny: Minimum Y value for a tile
+      """
       k = "{0},{1}".format(minx, miny)
       if self.grids.has_key(k):
          return self.grids[k]
@@ -91,6 +114,12 @@ class MultiTileWqParallelDijkstraLCP(object):
 
    # ...........................
    def _getStartupTask(self, minx, miny, tag):
+      """
+      @summary: Get a startup task for a region (no source vectors)
+      @param minx: Minimum X value for a tile
+      @param miny: Minimum Y value for a tile
+      @param tag: A tag to associate with the task
+      """
       task = Task('')
       cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} -e {e}".format(
             python=PYTHON_BIN,
@@ -107,15 +136,28 @@ class MultiTileWqParallelDijkstraLCP(object):
 
    # ...........................
    def _getSummaryFile(self, taskId):
+      """
+      @summary: Get a filename for a location to store summary information 
+                   for this process
+      """
       return os.path.join(self.oDir, "%s-summary.txt" % taskId)
 
    # ...........................
    def _getVectorFilename(self, taskId, d):
+      """
+      @summary: Get an edge vector file name
+      @param taskId: The id of the task to get the filename for
+      @param d: The direction of the edge [0,3]
+      """
       dirPart = ['toLeft', 'toTop', 'toRight', 'toBottom'][d]
       return os.path.join(self.oDir, "%s-%s.npy" % (taskId, dirPart))
    
    # ...........................
    def _readOutputs(self, taskId):
+      """
+      @summary: Read the outputs of a task
+      @param taskId: The id of the task to get outputs for
+      """
       cnt = open(self._getSummaryFile(taskId)).readlines()
       print cnt
       minx = float(cnt[0])
@@ -220,14 +262,8 @@ class MultiTileWqParallelDijkstraLCP(object):
                   else:
                      tmp = waitingGrids.pop(k)[0]
                   ss, vs = tmp
-                  #sides = waitingGrids.pop(k)
-                  #print "Sides:", sides
-                  #ss,vs = zip(*sides)
                   tag = currentTag
                   currentTag += 1
-                  print minx, miny
-                  print vs
-                  print ss
                   nTask = self._getConnectedTask(minx, miny, [vs], [ss], tag)
                   if nTask is not None:
                      rGrids.append(k)
@@ -237,8 +273,6 @@ class MultiTileWqParallelDijkstraLCP(object):
                # Add adjacent tiles as necessary
                if l:
                   vect = self._getVectorFilename(task.tag, 0)
-                  print "Left:", minx, miny
-                  print np.load(vect).tolist()
                   
                   myKey = self._getKey(minx-self.tileSize, miny)
                   if myKey is not None:
@@ -258,8 +292,6 @@ class MultiTileWqParallelDijkstraLCP(object):
                            q.submit(nTask)
                if t:
                   vect = self._getVectorFilename(task.tag, 1)
-                  print "Top:", minx, miny
-                  print np.load(vect).tolist()
                   
                   myKey = self._getKey(minx, maxy)
                   if myKey is not None:
@@ -279,8 +311,6 @@ class MultiTileWqParallelDijkstraLCP(object):
                            q.submit(nTask)
                if r:
                   vect = self._getVectorFilename(task.tag, 2)
-                  print "Right:", minx, miny
-                  print np.load(vect).tolist()
    
                   myKey = self._getKey(maxx, miny)
                   if myKey is not None:
@@ -300,8 +330,6 @@ class MultiTileWqParallelDijkstraLCP(object):
                            q.submit(nTask)
                if b:
                   vect = self._getVectorFilename(task.tag, 3)
-                  print "Bottom:", minx, miny
-                  print np.load(vect).tolist()
                   myKey = self._getKey(minx, miny-self.tileSize)
                   if myKey is not None:
                      if myKey in rGrids:
@@ -338,7 +366,12 @@ class MultiTileWqParallelDijkstraLCP(object):
             for s in stats:
                outF.write("%s\n" % ', '.join([str(i) for i in s]))
    
+   # ...........................
    def startWorkers(self, numWorkers):
+      """
+      @summary: Start work queue workers to perform computations
+      @param numWorkers: The number of workers to start
+      """
       import subprocess
       
       self.workers = []
@@ -348,7 +381,11 @@ class MultiTileWqParallelDijkstraLCP(object):
          #cmd = "{0} {1} {2}".format(WORKER_BIN, '127.0.0.1', WORK_QUEUE_DEFAULT_PORT)
          self.workers.append(subprocess.Popen(cmd, shell=True))
    
+   # ...........................
    def stopWorkers(self):
+      """
+      @summary: Stop running workers
+      """
       for w in self.workers:
          print "Sending kill signal"
          #os.killpg(w.pid, signal.SIGTERM)
