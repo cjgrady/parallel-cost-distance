@@ -19,6 +19,7 @@ def _writeRaster(grid, xll, yll, cellsize, noData, outDir, ts, maxX, maxY):
    @param noData: The no data value for the grid
    @todo: Consider determining ts from cell size and shape
    @todo: Take dx and dy as option instead of only cellsize
+   @todo: Consider moving rounding to write raster only
    """
    nrows, ncols = grid.shape
    fn = os.path.join(outDir, 'grid%s-%s-%s-%s.asc' % (xll, yll, 
@@ -44,6 +45,7 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
    @param xOffset: (optional) Offset the tiles this many cells in the X direction
    @param yOffset: (optional) Offset the tiles this many cells in the Y direction
    """
+   xc = yc = None
    # Get headers
    numHeaders = 0
    with open(fn) as inF:
@@ -61,6 +63,14 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
          elif line.lower().startswith('yllcorner'):
             #TODO: Round?
             yll = float(re.split(r' +', line.replace('\t', ' '))[1])
+            numHeaders += 1
+         elif line.lower().startswith('xllcenter'):
+            #TODO: Round?
+            xc = float(re.split(r' +', line.replace('\t', ' '))[1])
+            numHeaders += 1
+         elif line.lower().startswith('yllcenter'):
+            #TODO: Round?
+            yc = float(re.split(r' +', line.replace('\t', ' '))[1])
             numHeaders += 1
          elif line.lower().startswith('cellsize'):
             cellsize = float(re.split(r' +', line.replace('\t', ' '))[1])
@@ -82,12 +92,18 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
             #print line[:40]
             break
    
+   # Convert xc and yc to xll and yll if present
+   if xc is not None:
+      xll = round(xc - dx*(ncols / 2), 2)
+   if yc is not None:
+      yll = round(yc - dy*(nrows / 2), 2)
+   
    # Get x and y cells per tile
    xCells = int(ts / dx)
    yCells = int(ts / dy)
    
-   maxX = xll + ncols*dx
-   maxY = yll + nrows*dy
+   maxX = round(xll + ncols*dx, 2)
+   maxY = round(yll + nrows*dy, 2)
    
    if debug: # pragma: no cover
       print "Num cols:", ncols
@@ -125,8 +141,8 @@ def splitTile(fn, ts, outDir, xOffset=0, yOffset=0, debug=False):
          if debug:
             print "[", fromY, ":", toY, ", ", fromX, ":", toX, "]"
          g = grid[fromY:toY, fromX:toX]
-         myXll = xll + i * xCells * cellsize
-         myYll = yll + j * yCells * cellsize
+         myXll = round(xll + i * xCells * cellsize, 2)
+         myYll = round(yll + j * yCells * cellsize, 2)
          _writeRaster(g, myXll, myYll, cellsize, noData, outDir, ts, maxX, maxY)
    
    
