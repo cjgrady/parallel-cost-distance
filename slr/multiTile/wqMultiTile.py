@@ -135,6 +135,7 @@ class MultiTileWqParallelDijkstraLCP(object):
       """
       @summary: Performs the calculation
       """
+      stats = []
       aTime = time.time()
       currentTag = 1
       inputGrids = glob.glob(os.path.join(self.inDir, "*.asc"))
@@ -149,7 +150,7 @@ class MultiTileWqParallelDijkstraLCP(object):
       
       q = WorkQueue(port=port)
       #print "Monitoring"
-      #print q.enable_monitoring_full('/tmp/log')
+      print q.enable_monitoring_full('/tmp/')
       
       for g in inputGrids:
          task = Task('')
@@ -188,8 +189,9 @@ class MultiTileWqParallelDijkstraLCP(object):
             r = 0
             print "Task id:", task.id
             print "Task tag:", task.tag
-            #print dir(task)
-            #print task.resources_measured()
+            stats.append((task.id, task.tag, task.resources_measured.memory, 
+                          task.resources_measured.virtual_memory, 
+                          task.resources_measured.cpu_time))
             
             if os.path.exists(os.path.join(self.oDir, '%s.error' % task.tag)):
                print open(os.path.join(self.oDir, '%s.error' % task.tag)).read()
@@ -333,6 +335,8 @@ class MultiTileWqParallelDijkstraLCP(object):
             if r >= 1000:
                outF.write("-1\n")
             outF.write('%s\n' % (bTime - aTime))
+            for s in stats:
+               outF.write("%s\n" % ', '.join([str(i) for i in s]))
    
    def startWorkers(self, numWorkers):
       import subprocess
