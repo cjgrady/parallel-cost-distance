@@ -42,6 +42,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
    maxWorkers = 8
    chunks = []
    cellsChanged = 0
+   stats = []
 
    def addDebug(self, txt):
       self.extras.append(txt)
@@ -77,11 +78,13 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       """
       myName = str(uuid.uuid4().hex)
       logger = logging.getLogger(myName)
+      # TODO: Make this optional and configurable
       hdlr = logging.FileHandler('/tmp/logs/%s.log' % myName)
       formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
       hdlr.setFormatter(formatter)
       logger.addHandler(hdlr) 
       logger.setLevel(logging.DEBUG)
+      self.stats = []
       
       # ..........................
       def _getKey(minx, miny):
@@ -144,7 +147,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                   key = _getKey(minx, miny)
             
                   # Get cost surface and inundated edges
-                  costSurface, left, right, top, bottom = result
+                  costSurface, left, right, top, bottom, nc = result
                   
                   # Update cost surface
                   chunks[key][COST_KEY] = costSurface
@@ -153,7 +156,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                   if resultsLock:
                      time.sleep(TASK_WAIT_FOR_LOCK_TIME)
                   # Append to results queue
-                  resultsQueue.append((minx, miny, left, right, top, bottom))
+                  resultsQueue.append((minx, miny, left, right, top, bottom, nc))
       
          # Process source cells
          sourceChunks = {}
@@ -214,7 +217,10 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                # TODO: Do we need to lock if use this method?
                # Process results queue
                while len(resultsQueue) > 0:
-                  minx, miny, left, right, top, bottom = resultsQueue.pop(0)
+                  minx, miny, left, right, top, bottom, nc = resultsQueue.pop(0)
+                  logger.debug("Appending stats:")
+                  logger.debug("%s %s %s" % (minx, miny, nc))
+                  self.stats.append((minx, miny, nc))
                   key = _getKey(minx, miny)
                   
                   # Remove from processing queue
@@ -343,7 +349,6 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             logger.debug("Sleeping")
             time.sleep(WAIT_TIME)
             logger.debug("Awake")
-      
       # Resassemble
       #print "Reassemble"
       logger.debug("Reassembling")
@@ -358,6 +363,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
    # ..........................
    def _dijkstraChunk(self, chunk):
       try:
+         numChanged = 0
          inSurface, costSurface, leftVector, rightVector, topVector, \
             bottomVector, sourceCells = chunk
    
@@ -405,6 +411,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                   c = max(inSurface[y,0], min(leftVector[y], costSurface[y,0]))
                if c < costSurface[y,0] or costSurface[y,0] < 0:
                   costSurface[y,0] = c
+                  numChanged += 1
                   sourceCells.append((0, y))
                   if y == 0:
                      topCells.append((0, y))
@@ -419,6 +426,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                   c = max(inSurface[y,-1], min(rightVector[y], costSurface[y,-1]))
                if c < costSurface[y,-1] or costSurface[y,-1] < 0:
                   costSurface[y,-1] = c
+                  numChanged += 1
                   sourceCells.append((maxx-1, y))
                   if y == 0:
                      topCells.append((maxx-1, y))
@@ -433,6 +441,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                   c = max(inSurface[0,x], min(topVector[x], costSurface[0,x]))
                if c < costSurface[0,x] or costSurface[0,x] < 0:
                   costSurface[0,x] = c
+                  numChanged += 1
                   sourceCells.append((x, 0))
                   if x == 0:
                      leftCells.append((x,0))
@@ -447,6 +456,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                   c = max(inSurface[-1,x], min(bottomVector[x], costSurface[-1,x]))
                if c < costSurface[-1,x] or costSurface[-1,x] < 0:
                   costSurface[-1,x] = c
+                  numChanged += 1
                   sourceCells.append((x, maxy-1))
                   if x == 0:
                      leftCells.append((x, maxy-1))
@@ -473,6 +483,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
             if int(costSurface[y,x]) == int(self.noDataValue) or \
                 (cost < int(costSurface[y,x]) and costSurface[y,x] >= 0):
                costSurface[y,x] = cost
+               numChanged += 1
                self.cellsChanged += 1
                #log.debug("Setting cost in matrix for (%s, %s) = %s ... %s" % (x, y, cost, self.cMtx[y][x]))
                addNeighbors(x, y, cost)
@@ -504,7 +515,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          if len(bottomCells) > 0:
             bottomVect = costSurface[-1,:]
    
-         return costSurface, leftVect, rightVect, topVect, bottomVect
+         return costSurface, leftVect, rightVect, topVect, bottomVect, numChanged
       except Exception, e:
          msg = traceback.format_exc()
          raise Exception, str(msg)
@@ -565,6 +576,18 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          outF.write("%s\n" % dTime)
          outF.write("%s\n" % ','.join(["(%s, %s)" % (x, y) for x, y in self.sourceCells]))
          outF.write("%s\n" % '\n'.join(self.extras))
+      self.writeStats(os.path.join(outDir, '%s-stats.csv' % taskId))
+      
+   # .............................
+   def writeStats(self, statsFn):
+      """
+      @summary: Write out stats
+      @param statsFn: The file location to write stats
+      """
+      with open(statsFn, 'w') as outF:
+         for line in self.stats:
+            outF.write("%s\n" % ', '.join([str(i) for i in line]))
+
       
 # .............................................................................
 if __name__ == "__main__": # pragma: no cover
