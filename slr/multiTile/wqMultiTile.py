@@ -49,6 +49,8 @@ class MultiTileWqParallelDijkstraLCP(object):
       self.stepSize = stepSize
       self.summaryFn = summaryFn
       self.grids = {}
+      self.cc = 0
+      self.tc = 0
 
    # ...........................
    def _getGridFilename(self, d, minx, miny):
@@ -82,7 +84,7 @@ class MultiTileWqParallelDijkstraLCP(object):
          if os.path.exists(self._getGridFilename(self.cDir, minx, miny)):
             m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
          
-         cmd = "{python} {pycmd} {inGrid} {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {vectsSec} {sidesSec} -e {e}".format(
+         cmd = "{python} {pycmd} '{inGrid}' {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {vectsSec} {sidesSec} -e {e}".format(
                python=PYTHON_BIN,
                pycmd=getParallelDijkstraModulePath(),
                inGrid=self._getGridFilename(self.inDir, minx, miny),
@@ -90,7 +92,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                outputsPath=self.oDir, ss=self.stepSize, ts=self.tileSize,
                taskId=tag, vectsSec=vectsSec, sidesSec=sidesSec,
                e=os.path.join(self.oDir, '%s.error' % tag))
-         print "Submitting:"
+         print "Submitting:", cmd
          task.specify_command(cmd)
          task.specify_output_file(self._getSummaryFile(tag))
          task.specify_tag(str(tag))
@@ -107,9 +109,11 @@ class MultiTileWqParallelDijkstraLCP(object):
       @param miny: Minimum Y value for a tile
       """
       k = "{0},{1}".format(minx, miny)
+      print k
       if self.grids.has_key(k):
          return self.grids[k]
       else:
+         print self.grids
          return None
 
    # ...........................
@@ -158,8 +162,10 @@ class MultiTileWqParallelDijkstraLCP(object):
       @summary: Read the outputs of a task
       @param taskId: The id of the task to get outputs for
       """
-      cnt = open(self._getSummaryFile(taskId)).readlines()
-      print cnt
+      fn = self._getSummaryFile(taskId)
+      with open(fn) as sumF:
+         cnt = sumF.readlines()
+      #cnt = open(self._getSummaryFile(taskId)).readlines()
       minx = float(cnt[0])
       miny = float(cnt[1])
       maxx = float(cnt[2])
@@ -169,7 +175,6 @@ class MultiTileWqParallelDijkstraLCP(object):
       r = cnt[6].lower().strip() == 'true'
       b = cnt[7].lower().strip() == 'true'
       cc = int(cnt[8])
-      
       return minx, miny, maxx, maxy, l, t, r, b, cc
    
    # ...........................
@@ -192,7 +197,7 @@ class MultiTileWqParallelDijkstraLCP(object):
       
       q = WorkQueue(port=port)
       #print "Monitoring"
-      print q.enable_monitoring_full('/tmp/')
+      #q.enable_monitoring_full('/tmp')
       
       for g in inputGrids:
          task = Task('')
@@ -201,7 +206,8 @@ class MultiTileWqParallelDijkstraLCP(object):
          # Need to figure out range of tiles
          # Replace '--' with '-!', this happens if we are negative
          # Also remove leading 'grid' and trailing '.asc'
-         tmpG = os.path.basename(g).replace('--', '-!').replace('grid', '').replace('.asc', '')
+         tmp1 = os.path.basename(g).replace('grid-', 'grid!').split('grid')[1].split('.asc')[0]
+         tmpG = tmp1.replace('--', '-!')
          splitG = tmpG.split('-')
          #print splitG
          # Replace inserted !s with -s for negative
@@ -231,25 +237,31 @@ class MultiTileWqParallelDijkstraLCP(object):
             r = 0
             print "Task id:", task.id
             print "Task tag:", task.tag
-            stats.append((task.id, task.tag, task.resources_measured.memory, 
-                          task.resources_measured.virtual_memory, 
-                          task.resources_measured.cpu_time))
+            #print "Task output:", task.output
             
+            stats.append((task.id, task.tag))#, task.resources_measured.memory, 
+            #              task.resources_measured.virtual_memory, 
+            #              task.resources_measured.cpu_time))
+            # 
             if os.path.exists(os.path.join(self.oDir, '%s.error' % task.tag)):
+               print "Error:"
                print open(os.path.join(self.oDir, '%s.error' % task.tag)).read()
                
             if os.path.exists(self._getSummaryFile(task.tag)):
                minx, miny, maxx, maxy, l, t, r, b, cc = self._readOutputs(task.tag)
-               print minx, miny, maxx, maxy, l, t, r, b, cc
+               #print minx, miny, maxx, maxy, l, t, r, b, cc
                print "Changed", cc, "cells"
+               self.cc += cc
+               self.tc += 1
                
                k = self._getKey(minx, miny)
                print "Removing", k, "from running list", task.tag
                try:
                   rGrids.remove(k)
-               except:
+               except Exception, e:
+                  print str(e)
                   print rGrids
-                  raise
+                  raise e
             
                # Add any tasks that were waiting on this tile to finish
                if waitingGrids.has_key(k):
@@ -350,7 +362,6 @@ class MultiTileWqParallelDijkstraLCP(object):
                print task.id
                print task.command
                print task.output
-               print dir(task)
          else:
             pass
             #print q.__dict__

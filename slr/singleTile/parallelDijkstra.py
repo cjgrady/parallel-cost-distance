@@ -17,12 +17,11 @@ import traceback
 from slr.common.costFunctions import seaLevelRiseCostFn
 from slr.singleTile.base import SingleTileLCP
 from concurrent.futures import process
-
 # Constants to use
-TASK_WAIT_FOR_LOCK_TIME = .01
+TASK_WAIT_FOR_LOCK_TIME = .001
 COST_KEY = "cost"
 INPUT_KEY = "input"
-LOCK_WAIT_TIME = .01
+LOCK_WAIT_TIME = .001
 FROM_LEFT_KEY = "fromLeft"
 FROM_RIGHT_KEY = "fromRight"
 FROM_TOP_KEY = "fromTop"
@@ -69,14 +68,6 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                    source cell
       @note: This method should be implemented in subclasses
       """
-      myName = str(uuid.uuid4().hex)
-      logger = logging.getLogger(myName)
-      # TODO: Make this optional and configurable
-      hdlr = logging.FileHandler('/tmp/logs/%s.log' % myName)
-      formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-      hdlr.setFormatter(formatter)
-      logger.addHandler(hdlr) 
-      logger.setLevel(logging.DEBUG)
       self.stats = []
       
       # ..........................
@@ -196,8 +187,6 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                # Process results queue
                while len(resultsQueue) > 0:
                   minx, miny, left, right, top, bottom, nc = resultsQueue.pop(0)
-                  logger.debug("Appending stats:")
-                  logger.debug("%s %s %s" % (minx, miny, nc))
                   self.stats.append((minx, miny, nc))
                   key = _getKey(minx, miny)
                   
@@ -316,11 +305,6 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                # Unlock
                resultsLock = False
             time.sleep(WAIT_TIME)
-<<<<<<< HEAD
-            logger.debug("Awake")
-=======
-      
->>>>>>> 7c7f1f48c1820e89868d219e6aa218053628af89
       # Resassemble
       for y in xrange(0, yLen, self.step):
          for x in xrange(0, xLen, self.step):
@@ -516,22 +500,74 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       # Look for problems where input data is not no data but output grid is
       
       if self.cellsChanged > 0:
-         if len(np.where(self.origLeft != self.newLeft)[0]) > 0:
+         
+         writeLeft = False
+         writeTop = False
+         writeBottom = False
+         writeRight = False
+         
+         if self.leftSource is None:
+            if np.all(self.origLeft < self.noDataValue + 1): # All no data
+               writeLeft = np.any(self.newLeft >= 0)
+            else:
+               writeLeft = np.any(self.newLeft < self.origLeft)
+         else:
+            writeLeft = np.any(self.newLeft < self.leftSource)
+         
+         if self.topSource is None:
+            if np.all(self.origTop < self.noDataValue + 1):
+               writeTop = np.any(self.newTop >= 0)
+            else:
+               writeTop = np.any(self.newTop < self.origTop)
+         else:
+            writeTop = np.any(self.newTop < self.topSource)
+         
+         if self.rightSource is None:
+            if np.all(self.origRight < self.noDataValue +1):
+               writeRight = np.any(self.newRight >= 0)
+            else:
+               writeRight = np.any(self.newRight < self.origRight)
+         else:
+            writeRight = np.any(self.newRight < self.rightSource)
+         
+         if self.bottomSource is None:
+            if np.all(self.origBottom < self.noDataValue + 1):
+               writeBottom = np.any(self.newBottom >= 0)
+            else:
+               writeBottom = np.any(self.newBottom < self.origBottom)
+         else:
+            writeBottom = np.any(self.newBottom < self.bottomSource)
+         
+         
+         
+         #if np.any(self.origLeft > self.newLeft):
+         #if (self.leftSource is None and len(np.where(self.origLeft != self.newLeft)[0]) > 0) or np.any()
+         #if len(np.where(self.origLeft != self.newLeft)[0]) > 0:
+         #if self.leftSource is None or np.any(self.newLeft < self.leftSource):
+         if writeLeft:
             fn = os.path.join(outDir, '%s-toLeft.npy' % taskId)
             np.save(fn, self.newLeft)
             l = True
          
-         if len(np.where(self.origTop != self.newTop)[0]) > 0:
+         #if np.any(self.origTop > self.newTop):
+         #if len(np.where(self.origTop != self.newTop)[0]) > 0:
+         #if self.topSource is None or np.any(self.newTop < self.topSource):
+         if writeTop:
             fn = os.path.join(outDir, '%s-toTop.npy' % taskId)
             np.save(fn, self.newTop)
             t = True
-         
-         if len(np.where(self.origRight != self.newRight)[0]) > 0:
+         #if np.any(self.origRight > self.newRight):
+         #if len(np.where(self.origRight != self.newRight)[0]) > 0:
+         #if self.rightSource is None or np.any(self.newRight < self.rightSource):
+         if writeRight:
             fn = os.path.join(outDir, '%s-toRight.npy' % taskId)
             np.save(fn, self.newRight)
             r = True
          
-         if len(np.where(self.origBottom != self.newBottom)[0]) > 0:
+         #if np.any(self.origBottom > self.newBottom):
+         #if len(np.where(self.origBottom != self.newBottom)[0]) > 0:
+         #if self.bottomSource is None or np.any(self.newBottom < self.bottomSource):
+         if writeBottom:
             fn = os.path.join(outDir, '%s-toBottom.npy' % taskId)
             np.save(fn, self.newBottom)
             b = True
@@ -555,8 +591,8 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          outF.write("%s\n" % b) # Bottom modified
          outF.write("%s\n" % self.cellsChanged)
          outF.write("%s\n" % dTime)
-         outF.write("%s\n" % ','.join(["(%s, %s)" % (x, y) for x, y in self.sourceCells]))
-         outF.write("%s\n" % '\n'.join(self.extras))
+         #outF.write("%s\n" % ','.join(["(%s, %s)" % (x, y) for x, y in self.sourceCells]))
+         #outF.write("%s\n" % '\n'.join(self.extras))
       self.writeStats(os.path.join(outDir, '%s-stats.csv' % taskId))
       
    # .............................
@@ -614,7 +650,6 @@ if __name__ == "__main__": # pragma: no cover
          tile.setStepSize(args.step)
       else:
          tile.setStepSize(.15)
-   
    
       tile.calculate()
       

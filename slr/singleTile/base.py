@@ -35,6 +35,10 @@ class SingleTileLCP(object):
       self.inFn = inputFilename
       self.cFn = costFilename
       self.costFn = costFn
+      self.leftSource = None
+      self.rightSource = None
+      self.topSource = None
+      self.bottomSource = None
       self.sourceCells = []
       #TODO: Handle when no no data value is provided / better default
       self.noDataValue = -9999
@@ -55,38 +59,42 @@ class SingleTileLCP(object):
          inVect = self.inMtx[:,0]
          costVect = self.cMtx[:,0]
          cmpVect = self._squishStretchVector(vect, len(inVect))
+         self.leftSource = numpy.copy(cmpVect)
          getSourceCoords = lambda j: (0, j)
-         self.extras.append("Origin side: 0")
-         self.extras.append("In vector [:,0] - %s" % str(inVect.tolist()))
-         self.extras.append("Cost vector [:,0] - %s" % str(costVect.tolist()))
-         self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
+         #self.extras.append("Origin side: 0")
+         #self.extras.append("In vector [:,0] - %s" % str(inVect.tolist()))
+         #self.extras.append("Cost vector [:,0] - %s" % str(costVect.tolist()))
+         #self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
       elif originSide == 1:
          inVect = self.inMtx[0,:]
          costVect = self.cMtx[0,:]
          cmpVect = self._squishStretchVector(vect, len(inVect))
+         self.topSource = numpy.copy(cmpVect)
          getSourceCoords = lambda j: (j, 0)
-         self.extras.append("Origin side: 1")
-         self.extras.append("In vector [0,:] - %s" % str(inVect.tolist()))
-         self.extras.append("Cost vector [0,:] - %s" % str(costVect.tolist()))
-         self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
+         #self.extras.append("Origin side: 1")
+         #self.extras.append("In vector [0,:] - %s" % str(inVect.tolist()))
+         #self.extras.append("Cost vector [0,:] - %s" % str(costVect.tolist()))
+         #self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
       elif originSide == 2:
          inVect = self.inMtx[:,-1]
          costVect = self.cMtx[:,-1]
          cmpVect = self._squishStretchVector(vect, len(inVect))
+         self.rightSource = numpy.copy(cmpVect)
          getSourceCoords = lambda j: (self.cMtx.shape[1]-1, j)
-         self.extras.append("Origin side: 2")
-         self.extras.append("In vector [:,-1] - %s" % str(inVect.tolist()))
-         self.extras.append("Cost vector [:,-1] - %s" % str(costVect.tolist()))
-         self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
+         #self.extras.append("Origin side: 2")
+         #self.extras.append("In vector [:,-1] - %s" % str(inVect.tolist()))
+         #self.extras.append("Cost vector [:,-1] - %s" % str(costVect.tolist()))
+         #self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
       elif originSide == 3:
          inVect = self.inMtx[-1,:]
          costVect = self.cMtx[-1,:]
          cmpVect = self._squishStretchVector(vect, len(inVect))
+         self.bottomSource = numpy.copy(cmpVect)
          getSourceCoords = lambda j: (j, self.cMtx.shape[0] - 1)
-         self.extras.append("Origin side: 3")
-         self.extras.append("In vector [-1,:] - %s" % str(inVect.tolist()))
-         self.extras.append("Cost vector [-1,:] - %s" % str(costVect.tolist()))
-         self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
+         #self.extras.append("Origin side: 3")
+         #self.extras.append("In vector [-1,:] - %s" % str(inVect.tolist()))
+         #self.extras.append("Cost vector [-1,:] - %s" % str(costVect.tolist()))
+         #self.extras.append("Cmp vector - %s" % str(cmpVect.tolist()))
       else:
          raise Exception, "Cannot add source vector for side: %s" % originSide 
 
@@ -120,9 +128,15 @@ class SingleTileLCP(object):
       @param sourceValue: Source cells are grid cells with this value
       """
       #TODO: Make this smarter
-      self.sourceCells = numpy.vstack(numpy.where(self.inMtx <= 0)[::-1]).T
-      for x, y in self.sourceCells:
-         self.cMtx[y][x] = 0#self.inMtx[y,x]
+      tmp = numpy.vstack(numpy.where(self.inMtx <= 0)[::-1]).T
+      if tmp.shape[0] > 0 and tmp.shape[1] == 2:
+         self.sourceCells = tmp
+      try:
+         print self.sourceCells
+         for x, y in self.sourceCells:
+            self.cMtx[y][x] = 0#self.inMtx[y,x]
+      except Exception, e:
+         raise Exception, "{0}-{1}-{2}".format(str(self.sourceCells), str(e), str(tmp.shape))
    
    # ..........................
    def _initialize(self):
