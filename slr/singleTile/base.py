@@ -9,6 +9,7 @@
 import numpy
 import os
 import re
+import time
 
 # .............................................................................
 class SingleTileLCP(object):
@@ -146,6 +147,7 @@ class SingleTileLCP(object):
       if os.path.exists(self.inFn):
          numHeaders = 0
          hs = []
+         t1 = time.time()
          with open(self.inFn) as f:
             for line in f:
                if line.lower().startswith('ncols'):
@@ -193,7 +195,8 @@ class SingleTileLCP(object):
          self.headers = ''.join(hs)
          
          self.inMtx = numpy.loadtxt(self.inFn, skiprows=numHeaders, dtype=int)
-         
+         t2 = time.time()
+         self.rc = t2 - t1
       else:
          raise IOError, "Input grid does not exist: %s" % self.inFn
 
@@ -207,7 +210,10 @@ class SingleTileLCP(object):
       """
       @summary: Write output files (cost surface)
       """
+      t1 = time.time()
       numpy.savetxt(self.cFn, self.cMtx, header=self.headers, fmt="%i", comments='')#fmt="%1.2f")
+      t2 = time.time()
+      self.wc = t2 - t1
 
    # ..........................
    def _calculate(self):
