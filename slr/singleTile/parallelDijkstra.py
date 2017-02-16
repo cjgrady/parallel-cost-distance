@@ -68,6 +68,7 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
                    source cell
       @note: This method should be implemented in subclasses
       """
+      t1 = time.time()
       self.stats = []
       
       # ..........................
@@ -310,6 +311,8 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
          for x in xrange(0, xLen, self.step):
             key = _getKey(x, y)
             self.cMtx[y:y+self.step, x:x+self.step] = chunks[key][COST_KEY]
+      t2 = time.time()
+      self.psum = t2 - t1
 
    # ..........................
    def _dijkstraChunk(self, chunk):
@@ -596,6 +599,15 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       self.writeStats(os.path.join(outDir, '%s-stats.csv' % taskId))
       
    # .............................
+   def writeBenchmarks(self, bmFn):
+      """
+      @summary: Write out benchmarks
+      @param bmFn: The file location to write benchmarks
+      """
+      with open(bmFn, 'w') as outF:
+         outF.write("{rc}, {wc}, {psum}".format(rc=self.rc, wc=self.wc, psum=self.psum))
+      
+   # .............................
    def writeStats(self, statsFn):
       """
       @summary: Write out stats
@@ -624,6 +636,7 @@ if __name__ == "__main__": # pragma: no cover
    parser.add_argument('--step', type=float, help="The step size to use")
    parser.add_argument('--ts', type=float)
    parser.add_argument('-e', type=str, help="Log errors to this file location")
+   parser.add_argument('-b', type=str, help="File to store benchmarks")
 
    args = parser.parse_args()
    print args
@@ -663,6 +676,8 @@ if __name__ == "__main__": # pragma: no cover
       if args.g is not None:
          outDir = args.o
          tile.writeChangedVectors(outDir, taskId, ts=args.ts, dTime=dTime)
+      if args.b is not None:
+         tile.writeBenchmarks(args.b)
    except Exception, e:
       tb = traceback.format_exc()
       if args.e is not None:
