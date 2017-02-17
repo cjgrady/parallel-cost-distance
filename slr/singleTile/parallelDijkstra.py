@@ -599,13 +599,13 @@ class SingleTileParallelDijkstraLCP(SingleTileLCP):
       self.writeStats(os.path.join(outDir, '%s-stats.csv' % taskId))
       
    # .............................
-   def writeBenchmarks(self, bmFn):
+   def writeBenchmarks(self, bmFn, tt):
       """
       @summary: Write out benchmarks
       @param bmFn: The file location to write benchmarks
       """
       with open(bmFn, 'w') as outF:
-         outF.write("{rc}, {wc}, {psum}".format(rc=self.rc, wc=self.wc, psum=self.psum))
+         outF.write("{rc}, {wc}, {psum}, {tt}".format(rc=self.rc, wc=self.wc, psum=self.psum, tt=tt))
       
    # .............................
    def writeStats(self, statsFn):
@@ -677,12 +677,13 @@ if __name__ == "__main__": # pragma: no cover
          outDir = args.o
          tile.writeChangedVectors(outDir, taskId, ts=args.ts, dTime=dTime)
       if args.b is not None:
-         tile.writeBenchmarks(args.b)
+         t2 = time.time()
+         tile.writeBenchmarks(args.b, dTime)
    except Exception, e:
       tb = traceback.format_exc()
       if args.e is not None:
          with open(args.e, 'w') as outF:
             outF.write(str(e))
             outF.write(tb)
-         
+      raise e
             
