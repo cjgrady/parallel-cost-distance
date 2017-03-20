@@ -51,6 +51,7 @@ class MultiTileWqParallelDijkstraLCP(object):
       self.grids = {}
       self.cc = 0
       self.tc = 0
+      self.metrics = []
 
    # ...........................
    def _getGridFilename(self, d, minx, miny):
@@ -175,6 +176,7 @@ class MultiTileWqParallelDijkstraLCP(object):
       r = cnt[6].lower().strip() == 'true'
       b = cnt[7].lower().strip() == 'true'
       cc = int(cnt[8])
+      self.metrics.append([minx, miny, cc])
       return minx, miny, maxx, maxy, l, t, r, b, cc
    
    # ...........................
@@ -376,6 +378,13 @@ class MultiTileWqParallelDijkstraLCP(object):
             outF.write('%s\n' % (bTime - aTime))
             for s in stats:
                outF.write("%s\n" % ', '.join([str(i) for i in s]))
+   
+   # ...........................
+   def getMetrics(self):
+      """
+      @summary: Retrieve computation metrics
+      """
+      return self.metrics
    
    # ...........................
    def startWorkers(self, numWorkers):
