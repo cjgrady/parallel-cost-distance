@@ -629,6 +629,12 @@ if __name__ == "__main__": # pragma: no cover
    parser.add_argument("costSurface")
    parser.add_argument('-g', help="Generate edge vectors for modified cells")
    parser.add_argument('-t', '--taskId', help="Use this task id for outputs")
+   
+   parser.add_argument('-st', help='Source matrix from the top')
+   parser.add_argument('-sb', help='Source matrix from the bottom')
+   parser.add_argument('-sl', help='Source matrix from the left')
+   parser.add_argument('-sr', help='Source matrix from the right')
+   
    parser.add_argument('-v', '--vect', help="Use this vector for source cells", nargs="*")
    parser.add_argument('-s', '--fromSide', type=int, help="Source vector is from this side 0: left, 1: top, 2: right, 3: bottom", nargs="*")
    parser.add_argument('-o', help="File to write outputs")
@@ -644,14 +650,31 @@ if __name__ == "__main__": # pragma: no cover
    try:
       tile = SingleTileParallelDijkstraLCP(args.dem, args.costSurface, seaLevelRiseCostFn)
    
-      if args.fromSide is None or args.vect is None or len(args.fromSide) == 0 or len(args.vect) == 0:
+      if args.st is not None:
+         topMtx = np.load(args.st)
+         tile.addTopSourceMatrix(topMtx)
+
+      if args.sb is not None:
+         bottomMtx = np.load(args.sb)
+         tile.addBottomSourceMatrix(bottomMtx)
+         
+      if args.sl is not None:
+         leftMtx = np.load(args.sl)
+         tile.addLeftSourceMatrix(leftMtx)
+         
+      if args.sr is not None:
+         rightMtx = np.load(args.sr)
+         tile.addRightSourceMatrix(rightMtx)
+
+      if args.fromSide is not None and args.vect is not None:
+         sourceVector = np.load(sVect)
+         tile.addSourceVector(sourceVector, fromDir)
+      
+      if not tile.sourceCells:
          tile.findSourceCells()
          print tile.sourceCells
-      else:
-         for sVect, fromDir in zip(args.vect, args.fromSide):
-            sourceVector = np.load(sVect)
-            tile.addSourceVector(sourceVector, fromDir)
       
+            
       if args.w is not None:
          tile.setMaxWorkers(args.w)
       else:

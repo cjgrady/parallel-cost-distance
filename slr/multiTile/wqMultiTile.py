@@ -64,13 +64,12 @@ class MultiTileWqParallelDijkstraLCP(object):
       return os.path.join(d, self.grids["{0},{1}".format(minx, miny)])
    
    # ...........................
-   def _getConnectedTask(self, minx, miny, vects, fromSides, tag):
+   def _getConnectedTask(self, minx, miny, tag, fromLeft=None, fromRight=None,
+                         fromTop=None, fromBottom=None):
       """
       @summary: Submit a task to WorkQueue
       @param minx: The minimum X for the region
       @param miny: The minimum Y for the region
-      @param vects: List of source vectors for this task
-      @param fromSides: List of side keys (matches vects)
       @param tag: A tag to associate with the task
       """
       inGrid = self._getGridFilename(self.inDir, minx, miny)
@@ -78,20 +77,27 @@ class MultiTileWqParallelDijkstraLCP(object):
       if os.path.exists(inGrid):
          task = Task('')
          
-         vectsSec = ' '.join(['-v %s' % v for v in vects])
-         sidesSec = ' '.join(['-s %s' % s for s in fromSides])
+         sidesSec = ''
+         if fromLeft is not None:
+            sidesSec += '-sl {} '.format(fromLeft)
+         if fromRight is not None:
+            sidesSec += '-sr {} '.format(fromRight)
+         if fromTop is not None:
+            sidesSec += '-st {} '.format(fromTop)
+         if fromBottom is not None:
+            sidesSec += '-sb {} '.format(fromBottom)
          
          print "Submitting task for grid:", minx, miny
          #if os.path.exists(self._getGridFilename(self.cDir, minx, miny)):
          #   m = np.loadtxt(self._getGridFilename(self.cDir, minx, miny), comments='', skiprows=6, dtype=int)
          
-         cmd = "{python} {pycmd} '{inGrid}' {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {vectsSec} {sidesSec} -e {e}".format(
+         cmd = "{python} {pycmd} '{inGrid}' {costGrid} -g 1 -o {outputsPath} -w 50 -t {taskId} --step={ss} --ts={ts} {sidesSec} -e {e}".format(
                python=PYTHON_BIN,
                pycmd=getParallelDijkstraModulePath(),
                inGrid=self._getGridFilename(self.inDir, minx, miny),
                costGrid=self._getGridFilename(self.cDir, minx, miny),
                outputsPath=self.oDir, ss=self.stepSize, ts=self.tileSize,
-               taskId=tag, vectsSec=vectsSec, sidesSec=sidesSec,
+               taskId=tag, sidesSec=sidesSec,
                e=os.path.join(self.oDir, '%s.error' % tag))
          print "Submitting:", cmd
          task.specify_command(cmd)
@@ -270,6 +276,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                   # Having issues with Travis so only working on one side at a time
                   if len(waitingGrids[k]) > 1:
                      lngth = len(waitingGrids[k])
+                     # TODO: We can do all of these at once
                      tmp = waitingGrids[k].pop(0)
                      assert len(waitingGrids[k]) < lngth 
                      # Check that pop is modifying dictionary
@@ -278,7 +285,21 @@ class MultiTileWqParallelDijkstraLCP(object):
                   ss, vs = tmp
                   tag = currentTag
                   currentTag += 1
-                  nTask = self._getConnectedTask(minx, miny, [vs], [ss], tag)
+                  
+                  fl = fr = ft = fb = None
+                  for side, vect in tmp:
+                     if side == 0:
+                        fl = vect
+                     elif side == 1:
+                        ft = vect
+                     elif side == 2:
+                        fr = vect
+                     else:
+                        fb = vect
+                  
+                  nTask = self._getConnectedTask(minx, miny, tag, fromLeft=fl,
+                                                 fromRight=fr, fromTop=ft, 
+                                                 fromBottom=fb)
                   if nTask is not None:
                      rGrids.append(k)
                      print "Added", k, "to running list", tag
@@ -299,7 +320,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                         print "Submitting for:", myKey
                         tag = currentTag
                         currentTag += 1
-                        nTask = self._getConnectedTask(minx-self.tileSize, miny, [vect], [2], tag)
+                        nTask = self._getConnectedTask(minx-self.tileSize, miny, tag, fromRight=vect)
                         if nTask is not None:
                            rGrids.append(myKey)
                            print "Added", myKey, "to running list", tag
@@ -318,7 +339,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                         print "Submitting for:", myKey
                         tag = currentTag
                         currentTag += 1
-                        nTask = self._getConnectedTask(minx, maxy, [vect], [3], tag)
+                        nTask = self._getConnectedTask(minx, maxy, tag, fromBottom=vect)
                         if nTask is not None:
                            rGrids.append(myKey)
                            print "Added", myKey, "to running list", tag
@@ -337,7 +358,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                         print "Submitting for:", myKey
                         tag = currentTag
                         currentTag += 1
-                        nTask = self._getConnectedTask(maxx, miny, [vect], [0], tag)
+                        nTask = self._getConnectedTask(maxx, miny, tag, fromLeft=vect)
                         if nTask is not None:
                            rGrids.append(myKey)
                            print "Added", myKey, "to running list", tag
@@ -355,7 +376,7 @@ class MultiTileWqParallelDijkstraLCP(object):
                         print "Submitting for:", myKey
                         tag = currentTag
                         currentTag += 1
-                        nTask = self._getConnectedTask(minx, miny-self.tileSize, [vect], [1], tag)
+                        nTask = self._getConnectedTask(minx, miny-self.tileSize, tag, fromTop=vect)
                         if nTask is not None:
                            rGrids.append(myKey)
                            print "Added", myKey, "to running list", tag
