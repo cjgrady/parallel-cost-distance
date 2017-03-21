@@ -48,6 +48,22 @@ class SingleTileLCP(object):
       self.extras = []
    
    # ..........................
+   def addLeftSourceMatrix(self, mtx):
+      pass
+   
+   # ..........................
+   def addRightSourceMatrix(self, mtx):
+      pass
+   
+   # ..........................
+   def addTopSourceMatrix(self, mtx):
+      pass
+   
+   # ..........................
+   def addBottomSourceMatrix(self, mtx):
+      pass
+   
+   # ..........................
    def addSourceVector(self, vect, originSide):
       """
       @summary: Add source cells from a vector of cells along one side of the
