@@ -8,6 +8,7 @@ import glob
 from hashlib import md5
 import os
 from random import randint
+import shutil
 
 from slr.multiTile.wqMultiTile import MultiTileWqParallelDijkstraLCP
 
@@ -52,6 +53,12 @@ if __name__ == '__main__':
          m = MultiTileWqParallelDijkstraLCP(d, costDir, outDir, args.tileSize, args.stepSize)
          m.calculate()
          metrics = m.getMetrics()
+         
+         try:
+            shutil.rmtree(costDir)
+            shutil.rmtree(outDir)
+         except Exception, e:
+            print str(e)
          
          tiles = set([])
          cc = 0

@@ -24,7 +24,7 @@ class SingleTileLCP(object):
              either using the findSourceCells or addSourceVector method.
    """
    # ..........................
-   def __init__(self, inputFilename, costFilename, costFn):
+   def __init__(self, inputFilename, costFilename, costFn, padding):
       """
       @summary: Constructor
       @param inputFilename: The file path to the input cost surface grid
@@ -33,6 +33,7 @@ class SingleTileLCP(object):
                         reach the destination cell.  The function signature
                         should be (source value, destination value, distance)
       """
+      self.padding = padding
       self.inFn = inputFilename
       self.cFn = costFilename
       self.costFn = costFn
@@ -49,6 +50,8 @@ class SingleTileLCP(object):
    
    # ..........................
    def addLeftSourceMatrix(self, mtx):
+      # Stretch / squish matrix
+      # Set cost values
       pass
    
    # ..........................
@@ -210,16 +213,33 @@ class SingleTileLCP(object):
          
          self.headers = ''.join(hs)
          
-         self.inMtx = numpy.loadtxt(self.inFn, skiprows=numHeaders, dtype=int)
+         tmpIn = numpy.loadtxt(self.inFn, skiprows=numHeaders, dtype=int)
+         
+         tmpShape0, tmpShape1 = tmpIn.shape
+         
+         # Create a padded matrix
+         self.inMtx = numpy.ones(
+            (tmpShape0 + 2*self.padding, tmpShape1 + 2*self.padding), 
+            dtype=int) * self.noDataValue
+         
+         # Set the meat of the matrix to the input matrix
+         self.inMtx[self.padding:-self.padding,
+                    self.padding:-self.padding] = tmpIn
+         #self.inMtx = numpy.loadtxt(self.inFn, skiprows=numHeaders, dtype=int)
          t2 = time.time()
          self.rc = t2 - t1
       else:
          raise IOError, "Input grid does not exist: %s" % self.inFn
 
+      # Initialize padded cost matrix
+      # Create a cost matrix that is the size of the padded input matrix
+      self.cMtx = numpy.ones(shape=self.inMtx.shape, dtype=int) * self.noDataValue
+
+      # If we have a cost matrix, load it into the middle
       if os.path.exists(self.cFn):
-         self.cMtx = numpy.loadtxt(self.cFn, skiprows=6, dtype=int)
-      else:
-         self.cMtx = numpy.ones(shape=self.inMtx.shape, dtype=int) * self.noDataValue
+         tmpCmtx = numpy.loadtxt(self.cFn, skiprows=6, dtype=int)
+         self.cMtx[self.padding:-self.padding,
+                   self.padding:-self.padding] = tmpCmtx
 
    # ..........................
    def _writeOutputs(self):
@@ -227,7 +247,8 @@ class SingleTileLCP(object):
       @summary: Write output files (cost surface)
       """
       t1 = time.time()
-      numpy.savetxt(self.cFn, self.cMtx, header=self.headers, fmt="%i", comments='')#fmt="%1.2f")
+      tmpCout = self.cMtx[self.padding:-self.padding, self.padding:-self.padding]
+      numpy.savetxt(self.cFn, tmpCout, header=self.headers, fmt="%i", comments='')#fmt="%1.2f")
       t2 = time.time()
       self.wc = t2 - t1
 
