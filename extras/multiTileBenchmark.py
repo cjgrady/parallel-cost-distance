@@ -10,7 +10,7 @@ import os
 from random import randint
 import shutil
 
-from slr.multiTile.wqMultiTile import MultiTileWqParallelDijkstraLCP
+from slr.multiTile.wqMultiTile2 import MultiTileWqParallelDijkstraLCP
 
 # .............................................................................
 def createTemporaryDirectory(baseDir):
@@ -40,7 +40,7 @@ if __name__ == '__main__':
    
    parser.add_argument('workDir', type=str)
    parser.add_argument('tileSize', type=float)
-   parser.add_argument('stepSize', type=float)
+   parser.add_argument('padding', type=int)
    
    args = parser.parse_args()
 
@@ -50,7 +50,7 @@ if __name__ == '__main__':
       for d in glob.glob(args.testDirGlob):
          costDir = createTemporaryDirectory(args.workDir)
          outDir = createTemporaryDirectory(args.workDir)
-         m = MultiTileWqParallelDijkstraLCP(d, costDir, outDir, args.tileSize, args.stepSize)
+         m = MultiTileWqParallelDijkstraLCP(d, costDir, outDir, args.tileSize, args.padding)
          m.calculate()
          metrics = m.getMetrics()
          
