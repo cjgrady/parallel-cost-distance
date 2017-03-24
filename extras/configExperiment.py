@@ -14,7 +14,7 @@ import time
 from slr.multiTile.wqMultiTile2 import MultiTileWqParallelDijkstraLCP
 
 TILE_SIZES = [(0.5, 'half'), (1.0, 'one'), (2.0, 'two')]
-PADDINGS = [1, 5, 10, 50, 100]
+PADDINGS = [1, 3, 5, 10]
 
 # What are the configurations we will test
 # What metrics will be used for testing
@@ -55,7 +55,7 @@ if __name__ == '__main__':
       if writeHeaders:
          outF.write("directory, tile size, number of tiles, number of tiles computed, cells changed, total time, padding, number of workers\n")
 
-      regionDirs = glob.glob(os.path.join(args.basedir, '*'))
+      regionDirs = glob.glob(os.path.join(args.dataDir, '*'))
       for region in regionDirs:
          for ts, d in TILE_SIZES:
             tileDir = os.path.join(region, d)
@@ -81,6 +81,6 @@ if __name__ == '__main__':
                   cc += int(i[2])
                
                outF.write("{}, {}, {}, {}, {}, {}, {}, {}\n".format(tileDir, ts, 
-                           len(tiles), len(metrics), cc, btime - atime, p, 
+                           len(tiles), len(metrics), cc, bTime - aTime, p, 
                            args.numWorkers))
    
