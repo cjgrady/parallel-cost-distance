@@ -14,7 +14,7 @@ import time
 from slr.multiTile.wqMultiTile2 import MultiTileWqParallelDijkstraLCP
 
 TILE_SIZES = [(0.5, 'half'), (1.0, 'one'), (2.0, 'two')]
-PADDINGS = [1, 3, 5, 10]
+PADDINGS = [1] #3, 5, 10]
 
 # What are the configurations we will test
 # What metrics will be used for testing

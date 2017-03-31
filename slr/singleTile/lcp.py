@@ -11,6 +11,7 @@ import heapq
 import numpy as np
 import os
 import re
+import time
 
 from slr.common.costFunctions import seaLevelRiseCostFn
 
@@ -408,7 +409,17 @@ class SingleTileLCP(object):
             outF.write("{}\n".format(i))
          outF.write("{}\n".format(self.cellsChanged))
 
-
+# .............................................................................
+def waitForFileOrFail(fn, waitInterval=1, maxWait=1000):
+   """
+   """
+   i = 0
+   while not os.path.exists(fn) and i < maxWait:
+      time.sleep(waitInterval)
+      i += 1
+   if i >= maxWait:
+      raise Exception, "File took too long to exist"
+   
 """
 stats / etc
 """
@@ -453,15 +464,26 @@ if __name__ == "__main__": # pragma: no cover
    tile = SingleTileLCP(args.dem, args.costSurface, seaLevelRiseCostFn, 
                         padding=padding)
    if args.st is not None and args.it is not None:
+      waitForFileOrFail(args.st)
+      waitForFileOrFail(args.it)
       tile.addTopSourceMatrix(np.load(args.st), np.load(args.it))
    if args.sb is not None and args.ib is not None:
+      waitForFileOrFail(args.sb)
+      waitForFileOrFail(args.ib)
       tile.addBottomSourceMatrix(np.load(args.sb), np.load(args.ib))
    if args.sl is not None and args.il is not None:
+      waitForFileOrFail(args.sl)
+      waitForFileOrFail(args.il)
       tile.addLeftSourceMatrix(np.load(args.sl), np.load(args.il))
    if args.sr is not None and args.ir is not None:
+      waitForFileOrFail(args.sr)
+      waitForFileOrFail(args.ir)
       tile.addRightSourceMatrix(np.load(args.sr), np.load(args.ir))
  
+   aTime = time.time()
    tile.calculate()
+   bTime = time.time()
+   print "Total time:", bTime - aTime
    tile.writeChangedDirections(args.workDir, args.taskId)
    
    if args.summaryFn is not None:
