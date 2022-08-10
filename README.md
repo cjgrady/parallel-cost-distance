@@ -1,10 +1,8 @@
-# irksome-broccoli
-
-[![Build Status](https://travis-ci.org/cjgrady/irksome-broccoli.svg?branch=master)](https://travis-ci.org/cjgrady/irksome-broccoli)
+# parallel-cost-distance
 
 [![Coverage Status](https://coveralls.io/repos/github/cjgrady/irksome-broccoli/badge.svg?branch=master)](https://coveralls.io/github/cjgrady/irksome-broccoli?branch=master)
 
-Note: The build says that it is failing but there seems to be an issue deploying CC Tools on Travis CI.  I believe that it is an issue with the tests trying to utilize more cores / resources than are available with Travis.  
+Note: This repository is now archived.  It can serve as a good base for additional experimentation and research but it is no longer being actively maintained.
 
 # Description
 
